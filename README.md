@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fanz Agent CLI
 
-## Getting Started
+Demo web de un CLI mock para operar una cuenta de ticketing desde una terminal en el navegador. El objetivo es que una persona o un agente pueda ejecutar comandos estables, con errores accionables y salida parseable usando `--json`.
 
-First, run the development server:
+## Probar localmente
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Credenciales mock
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `mock_admin`: `read`, `write`, `delete`, `export`, `resend`
+- `mock_ops`: `read`, `write`, `export`, `resend`
+- `mock_viewer`: `read`
 
-## Learn More
+## Flujo end-to-end
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+fanz login --token mock_admin
+fanz auth whoami --json
+fanz events create --name "Fiesta Demo" --description "Evento creado desde la prueba" --location "C Complejo Art Media" --date 2026-07-20T23:00:00Z --ticket "General:10000:500" --status on_sale --json
+fanz events list --json
+fanz dates create --event EVT_101 --starts 2026-07-21T23:00:00Z --venue "Art Media" --json
+fanz tickets create --event EVT_101 --name VIP --price 25000 --stock 80 --json
+fanz tickets update TCK_102 --price 12000 --stock 450 --json
+fanz discounts create --event EVT_101 --code DEMO20 --percent 20 --max-uses 100 --json
+fanz sales summary --event EVT_100 --json
+fanz sales list --event EVT_100 --json
+fanz orders show ORD_100 --json
+fanz orders resend ORD_100 --email comprador@example.test --json
+fanz audit list --json
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Guardrails
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+fanz events delete EVT_101 --dry-run --json
+fanz events delete EVT_101 --yes --json
+fanz login --token mock_viewer
+fanz tickets create --event EVT_100 --name Campo --price 9000 --stock 100 --json
+```
 
-## Deploy on Vercel
+El primer comando muestra un preview sin aplicar cambios. El segundo requiere `--yes` porque borra datos. El ultimo falla porque `mock_viewer` no tiene permiso de escritura.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Decisiones
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- El motor CLI vive en `lib/fanz-cli` y no depende de React ni de xterm.js.
+- La web usa xterm.js solo como interfaz de entrada/salida.
+- El estado mock se persiste en `localStorage` para que el flujo sea repetible dentro del navegador.
+- No hay datos reales ni llamadas externas.
+
+## Limitaciones
+
+- Es una cuenta mock single-tenant.
+- Las ventas son seed data; no hay checkout real.
+- La exportacion CSV se devuelve como string en JSON en vez de descargar un archivo.
