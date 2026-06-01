@@ -1,4 +1,4 @@
-import type { CliResponse, FanzState, Order, TicketType } from "./types";
+import type { CliResponse, FanzState, Order, TicketType } from "../types";
 
 export function formatResponse(response: CliResponse, json: boolean): string {
   if (json) {

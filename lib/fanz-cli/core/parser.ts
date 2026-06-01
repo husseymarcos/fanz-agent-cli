@@ -1,4 +1,4 @@
-import type { ParsedCommand } from "./types";
+import type { ParsedCommand } from "../types";
 
 export class CliError extends Error {
   constructor(
@@ -74,7 +74,10 @@ export function parseCommand(input: string): ParsedCommand {
       continue;
     }
 
-    const [rawKey, inlineValue] = token.slice(2).split(/=(.*)/s, 2);
+    const flag = token.slice(2);
+    const separatorIndex = flag.indexOf("=");
+    const rawKey = separatorIndex === -1 ? flag : flag.slice(0, separatorIndex);
+    const inlineValue = separatorIndex === -1 ? undefined : flag.slice(separatorIndex + 1);
     if (!rawKey) throw new CliError(`Invalid flag ${token}`, "parse_error");
     const key = rawKey.trim();
 
