@@ -1,6 +1,60 @@
-import type { FanzState } from "./types";
+import type { Event, EventDate } from "./events";
+import type { TicketType } from "./tickets";
+import type { Discount } from "./discounts";
+import type { Order, IssuedTicket } from "./orders";
+
+export type Money = {
+  amount: number;
+  currency: "ARS";
+};
+
+export type Account = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type Permission = "read" | "write" | "delete" | "export" | "resend";
+
+export type AuthToken = {
+  token: string;
+  label: string;
+  accountId: string;
+  permissions: Permission[];
+};
+
+export type AuditEntry = {
+  id: string;
+  at: string;
+  token?: string;
+  command: string;
+  status: "ok" | "error" | "dry-run";
+  message: string;
+};
+
+export type FanzState = {
+  version: 1;
+  activeToken?: string;
+  accounts: Account[];
+  tokens: AuthToken[];
+  events: Event[];
+  dates: EventDate[];
+  tickets: TicketType[];
+  discounts: Discount[];
+  orders: Order[];
+  issuedTickets: IssuedTicket[];
+  auditLog: AuditEntry[];
+  counters: Record<string, number>;
+};
 
 export const STORAGE_KEY = "fanz-cli-state-v1";
+
+export type IdPrefix = "EVT" | "DAT" | "TCK" | "DSC" | "ORD" | "ISS" | "AUD";
+
+export function nextId(state: FanzState, prefix: IdPrefix): string {
+  state.counters[prefix] = (state.counters[prefix] ?? 0) + 1;
+  return `${prefix}_${state.counters[prefix]}`;
+}
 
 const now = "2026-05-29T18:00:00.000Z";
 

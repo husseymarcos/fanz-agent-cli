@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { createInitialState } from "../lib/fanz-cli/data";
 import { runCli } from "../lib/fanz-cli/engine";
-import type { CliResponse, FanzState } from "../lib/fanz-cli/types";
+import type { CliResponse } from "../lib/fanz-cli/engine";
+import type { FanzState } from "../lib/fanz-cli/data";
 
 type CliSession = {
   state: FanzState;

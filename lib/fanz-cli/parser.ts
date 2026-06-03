@@ -1,5 +1,3 @@
-import type { ParsedCommand } from "../types";
-
 export class CliError extends Error {
   constructor(
     message: string,
@@ -56,7 +54,19 @@ export function tokenize(input: string): string[] {
   return tokens;
 }
 
-export function parseCommand(input: string): ParsedCommand {
+export type Command = {
+  raw: string;
+  namespace: string;
+  action?: string;
+  subject?: string;
+  positionals: string[];
+  flags: Record<string, string | boolean>;
+  json: boolean;
+  dryRun: boolean;
+  yes: boolean;
+};
+
+export function parseCommand(input: string): Command {
   const tokens = tokenize(input);
   if (tokens[0] === "fanz") tokens.shift();
   if (tokens.length === 0) throw new CliError("Type a command, for example: fanz help");
@@ -140,4 +150,35 @@ export function requireFlag(
   const value = flagString(flags, name);
   if (!value) throw new CliError(`Missing required flag --${name}`, "validation_error");
   return value;
+}
+
+export function findById<T extends { id: string }>(
+  items: T[],
+  id: string | undefined,
+  label: string,
+): T {
+  if (!id) throw new CliError(`Missing ${label} id`, "validation_error");
+  const item = items.find((candidate) => candidate.id === id);
+  if (!item) {
+    const capitalized = `${label[0]?.toUpperCase() ?? ""}${label.slice(1)}`;
+    throw new CliError(`${capitalized} ${id} was not found.`, "not_found");
+  }
+  return item;
+}
+
+export function requireEventFlagOrSubject(command: Command): string {
+  return (
+    flagString(command.flags, "event", command.subject) ??
+    (() => {
+      throw new CliError(
+        "Missing event id. Use --event EVT_100 or pass it after the action.",
+        "validation_error",
+      );
+    })()
+  );
+}
+
+export function resourceId(command: Command): string | undefined {
+  if (command.subject?.startsWith("EVT_")) return command.positionals[0];
+  return command.subject;
 }
