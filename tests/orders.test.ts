@@ -1,10 +1,15 @@
-import { describe, expect, test } from "bun:test";
-import { session, loginAs } from "./helpers";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { session } from "./helpers";
 
 describe("orders", () => {
-  test("show returns order with issued tickets", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  let cli: ReturnType<typeof session>;
+
+  beforeEach(() => {
+    cli = session();
+  });
+
+  test("show order includes the buyer and issued tickets", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz orders show ORD_100");
     expect(res.status).toBe("ok");
     const data = res.data as Record<string, unknown>;
@@ -15,17 +20,15 @@ describe("orders", () => {
     expect((data.issuedTickets as unknown[]).length).toBe(2);
   });
 
-  test("show non-existent order throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  test("unknown order shows an error", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz orders show ORD_999");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Order ORD_999 was not found/);
   });
 
-  test("resend paid order updates lastDeliveryAt", () => {
-    const cli = session();
-    loginAs(cli, "mock_ops");
+  test("resend paid order records the latest delivery time", () => {
+    cli.loginAs("mock_ops");
     const before = cli.state.orders.find((o) => o.id === "ORD_100")?.lastDeliveryAt;
     const res = cli.run("fanz orders resend ORD_100 --email comprador@example.test");
     expect(res.status).toBe("ok");
@@ -40,17 +43,15 @@ describe("orders", () => {
     expect(after).not.toBe(before);
   });
 
-  test("resend without --email uses buyer email", () => {
-    const cli = session();
-    loginAs(cli, "mock_ops");
+  test("resend uses the buyer email when no email is provided", () => {
+    cli.loginAs("mock_ops");
     const res = cli.run("fanz orders resend ORD_101");
     expect(res.status).toBe("ok");
     expect((res.data as Record<string, unknown>).sentTo).toBe("mateo@example.test");
   });
 
   test("resend non-paid order is blocked", () => {
-    const cli = session();
-    loginAs(cli, "mock_ops");
+    cli.loginAs("mock_ops");
     // Mutate an order to pending (since we can't create orders via CLI)
     const order = cli.state.orders.find((o) => o.id === "ORD_101")!;
     order.status = "pending";
@@ -61,9 +62,8 @@ describe("orders", () => {
     order.status = "paid";
   });
 
-  test("resend dry-run does not mutate", () => {
-    const cli = session();
-    loginAs(cli, "mock_ops");
+  test("resend preview leaves the delivery time unchanged", () => {
+    cli.loginAs("mock_ops");
     const before = cli.state.orders.find((o) => o.id === "ORD_100")?.lastDeliveryAt;
     const res = cli.run("fanz orders resend ORD_100 --dry-run");
     expect(res.status).toBe("dry-run");
@@ -71,9 +71,8 @@ describe("orders", () => {
     expect(after).toBe(before);
   });
 
-  test("resend non-existent order throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_ops");
+  test("unknown order shows an error when resending", () => {
+    cli.loginAs("mock_ops");
     const res = cli.run("fanz orders resend ORD_999");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Order ORD_999 was not found/);

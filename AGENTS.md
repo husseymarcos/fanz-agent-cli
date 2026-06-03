@@ -22,11 +22,11 @@ Use **Bun**. Lockfile is `bun.lock`.
 ## Testing
 - Tests use **Bun's built-in test runner** (`bun:test`) with `expect`-style assertions.
 - Run with `bun test` (or `bun run test`). No compilation step needed.
-- Test files live in `tests/` and import the CLI engine directly from `lib/fanz-cli/`.
+- Test files live in `tests/` and import the CLI engine directly from `lib/`.
 
 ## Architecture
 - **App Router**: entrypoints are `app/layout.tsx` and `app/page.tsx`.
-- **CLI engine**: lives in `lib/fanz-cli/` and is framework-agnostic. Key files:
+- **CLI engine**: lives in `lib/` and is framework-agnostic. Key files:
   - `engine.ts` — `runCli(input, state)` dispatch loop
   - `data.ts` — seed data and `createInitialState()`
   - `types.ts` — domain types (`FanzState`, `CliResponse`, etc.)

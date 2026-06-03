@@ -2,10 +2,10 @@
 
 import { useEffect, useImperativeHandle, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
-import { createInitialState, STORAGE_KEY } from "@/lib/fanz-cli/data";
-import { runCli } from "@/lib/fanz-cli/engine";
-import { formatResponse } from "@/lib/fanz-cli/format";
-import type { FanzState } from "@/lib/fanz-cli/data";
+import { createInitialState, STORAGE_KEY } from "@/lib/data";
+import { runCli } from "@/lib/engine";
+import { formatResponse } from "@/lib/format";
+import type { FanzState } from "@/lib/data";
 
 const PROMPT = "\x1b[38;2;45;212;191mfanz\x1b[0m $ ";
 

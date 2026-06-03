@@ -1,10 +1,15 @@
-import { describe, expect, test } from "bun:test";
-import { session, loginAs } from "./helpers";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { session } from "./helpers";
 
 describe("sales", () => {
-  test("summary returns correct aggregates", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  let cli: ReturnType<typeof session>;
+
+  beforeEach(() => {
+    cli = session();
+  });
+
+  test("summary shows the sales totals", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz sales summary --event EVT_100");
     expect(res.status).toBe("ok");
     expect(res.data).toEqual({
@@ -18,18 +23,16 @@ describe("sales", () => {
     });
   });
 
-  test("list returns order rows", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  test("list shows the event orders", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz sales list --event EVT_100");
     expect(res.status).toBe("ok");
     const rows = res.data as unknown[];
     expect(rows.length).toBe(2);
   });
 
-  test("export returns CSV filename and content", () => {
-    const cli = session();
-    loginAs(cli, "mock_ops");
+  test("export provides a CSV file name and contents", () => {
+    cli.loginAs("mock_ops");
     const res = cli.run("fanz sales export --event EVT_100");
     expect(res.status).toBe("ok");
     const data = res.data as Record<string, unknown>;
@@ -38,9 +41,8 @@ describe("sales", () => {
     expect((data.content as string).includes("id")).toBe(true);
   });
 
-  test("export CSV escapes commas and quotes", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("export separates CSV values with commas", () => {
+    cli.loginAs("mock_admin");
     // Create event and order with tricky buyer name
     cli.run('fanz events create --name "CSV Test" --location "Lab"');
     const event = cli.state.events.find((e) => e.name === "CSV Test")!;
@@ -56,23 +58,20 @@ describe("sales", () => {
   });
 
   test("export requires export permission", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz sales export --event EVT_100");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/lacks export permission/);
   });
 
   test("summary requires read permission", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz sales summary --event EVT_100");
     expect(res.status).toBe("ok");
   });
 
-  test("sales for non-existent event throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  test("sales for an unknown event show an error", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz sales summary --event EVT_999");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Event EVT_999 was not found/);

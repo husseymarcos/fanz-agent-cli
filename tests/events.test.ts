@@ -1,19 +1,23 @@
-import { describe, expect, test } from "bun:test";
-import { session, loginAs } from "./helpers";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { session } from "./helpers";
 
 describe("events", () => {
-  test("list returns seed events", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  let cli: ReturnType<typeof session>;
+
+  beforeEach(() => {
+    cli = session();
+  });
+
+  test("list shows the starting event", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz events list");
     expect(res.status).toBe("ok");
     expect(Array.isArray(res.data)).toBe(true);
     expect((res.data as unknown[]).length).toBe(1);
   });
 
-  test("create event with minimal flags", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("create event with the required details", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events create --name "Fiesta" --location "Club"');
     expect(res.status).toBe("ok");
     const event = cli.state.events.find((e) => e.name === "Fiesta");
@@ -22,8 +26,7 @@ describe("events", () => {
   });
 
   test("create event with date and ticket", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     const res = cli.run(
       'fanz events create --name "Combo" --location "Arena" --date 2026-08-01T20:00:00Z --ticket "VIP:20000:100" --status on_sale',
     );
@@ -34,17 +37,15 @@ describe("events", () => {
     expect(cli.state.tickets.filter((t) => t.eventId === event!.id).length).toBe(1);
   });
 
-  test("create event with invalid ticket spec throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("create event warns when ticket details are incomplete", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events create --name "Bad" --location "X" --ticket "Oops"');
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Name:price:stock/);
   });
 
-  test("create event dry-run does not mutate state", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("create event preview leaves events unchanged", () => {
+    cli.loginAs("mock_admin");
     const before = cli.state.events.length;
     const res = cli.run('fanz events create --name "Ghost" --location "Void" --dry-run');
     expect(res.status).toBe("dry-run");
@@ -52,8 +53,7 @@ describe("events", () => {
   });
 
   test("update event name and status", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events update EVT_100 --name "Updated" --status paused');
     expect(res.status).toBe("ok");
     const event = cli.state.events.find((e) => e.id === "EVT_100");
@@ -61,9 +61,8 @@ describe("events", () => {
     expect(event?.status).toBe("paused");
   });
 
-  test("update event dry-run does not mutate", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("update event preview leaves the event unchanged", () => {
+    cli.loginAs("mock_admin");
     const original = cli.state.events.find((e) => e.id === "EVT_100")!.name;
     const res = cli.run('fanz events update EVT_100 --name "Ghost" --dry-run');
     expect(res.status).toBe("dry-run");
@@ -71,25 +70,22 @@ describe("events", () => {
   });
 
   test("pause event", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     const res = cli.run("fanz events pause EVT_100");
     expect(res.status).toBe("ok");
     expect(cli.state.events.find((e) => e.id === "EVT_100")?.status).toBe("paused");
   });
 
   test("resume event", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     cli.run("fanz events pause EVT_100");
     const res = cli.run("fanz events resume EVT_100");
     expect(res.status).toBe("ok");
     expect(cli.state.events.find((e) => e.id === "EVT_100")?.status).toBe("on_sale");
   });
 
-  test("duplicate event copies dates, tickets and discounts with reset counters", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("duplicate event starts a fresh copy of dates, tickets and discounts", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run("fanz events duplicate EVT_100");
     expect(res.status).toBe("ok");
     const copy = cli.state.events.find((e) => e.name === "Noche Demo copia");
@@ -106,16 +102,14 @@ describe("events", () => {
   });
 
   test("duplicate event with custom name", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events duplicate EVT_100 --name "Custom Copy"');
     expect(res.status).toBe("ok");
     expect(cli.state.events.some((e) => e.name === "Custom Copy")).toBe(true);
   });
 
-  test("duplicate event dry-run does not mutate", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("duplicate event preview leaves events unchanged", () => {
+    cli.loginAs("mock_admin");
     const before = cli.state.events.length;
     const res = cli.run("fanz events duplicate EVT_100 --dry-run");
     expect(res.status).toBe("dry-run");
@@ -123,8 +117,7 @@ describe("events", () => {
   });
 
   test("delete event requires confirmation", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events create --name "Del" --location "X"');
     expect(res.status).toBe("ok");
     const event = cli.state.events.find((e) => e.name === "Del")!;
@@ -134,10 +127,9 @@ describe("events", () => {
     expect(cli.state.events.find((e) => e.id === event.id)).toBeTruthy();
   });
 
-  test("delete event with --yes removes catalog", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
-    const res = cli.run('fanz events create --name "DelYes" --location "X"');
+  test("confirmed event deletion removes related dates, tickets and discounts", () => {
+    cli.loginAs("mock_admin");
+    cli.run('fanz events create --name "DelYes" --location "X"');
     const event = cli.state.events.find((e) => e.name === "DelYes")!;
     cli.run(`fanz dates create --event ${event.id} --starts 2026-09-01T20:00:00Z`);
     cli.run(`fanz tickets create --event ${event.id} --name "T" --price 1000 --stock 10`);
@@ -152,18 +144,16 @@ describe("events", () => {
   });
 
   test("delete event with paid orders is blocked", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+    cli.loginAs("mock_admin");
     const res = cli.run("fanz events delete EVT_100 --yes");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/paid orders/);
     expect(cli.state.events.find((e) => e.id === "EVT_100")).toBeTruthy();
   });
 
-  test("delete event dry-run previews removal without mutating", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
-    const res = cli.run('fanz events create --name "Dry" --location "X"');
+  test("delete event preview leaves events unchanged", () => {
+    cli.loginAs("mock_admin");
+    cli.run('fanz events create --name "Dry" --location "X"');
     const event = cli.state.events.find((e) => e.name === "Dry")!;
     const before = cli.state.events.length;
     const del = cli.run(`fanz events delete ${event.id} --dry-run`);
@@ -171,9 +161,8 @@ describe("events", () => {
     expect(cli.state.events.length).toBe(before);
   });
 
-  test("event view computes revenue and counts", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  test("event list shows revenue and totals", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz events list");
     expect(res.status).toBe("ok");
     const view = (res.data as unknown[])[0] as Record<string, unknown>;
@@ -182,25 +171,22 @@ describe("events", () => {
     expect(view.ticketTypes).toBe(2);
   });
 
-  test("invalid event status throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("invalid event status shows an error", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events update EVT_100 --status invalid_status');
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Invalid status/);
   });
 
-  test("missing event id throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("missing event id shows an error", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run('fanz events update --name "X"');
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Missing event id/);
   });
 
-  test("non-existent event throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("unknown event shows an error", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run("fanz events update EVT_999 --name X");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Event EVT_999 was not found/);

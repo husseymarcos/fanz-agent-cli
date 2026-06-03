@@ -1,56 +1,55 @@
-import { describe, expect, test } from "bun:test";
-import { session, loginAs } from "./helpers";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { session } from "./helpers";
 
 describe("auth", () => {
+  let cli: ReturnType<typeof session>;
+
+  beforeEach(() => {
+    cli = session();
+  });
+
   describe("login", () => {
-    test("admin token succeeds", () => {
-      const cli = session();
+    test("admin login succeeds", () => {
       const res = cli.run("fanz login --token mock_admin");
       expect(res.status).toBe("ok");
       expect(res.data).toMatchObject({ token: "mock_admin", permissions: expect.arrayContaining(["read", "write", "delete"]) });
     });
 
-    test("ops token succeeds", () => {
-      const cli = session();
+    test("ops login succeeds", () => {
       const res = cli.run("fanz login --token mock_ops");
       expect(res.status).toBe("ok");
       expect(res.data).toMatchObject({ token: "mock_ops", permissions: expect.arrayContaining(["read", "write"]) });
     });
 
-    test("viewer token succeeds", () => {
-      const cli = session();
+    test("viewer login succeeds", () => {
       const res = cli.run("fanz login --token mock_viewer");
       expect(res.status).toBe("ok");
       expect(res.data).toMatchObject({ token: "mock_viewer", permissions: ["read"] });
     });
 
-    test("invalid token fails", () => {
-      const cli = session();
+    test("unknown login token fails", () => {
       const res = cli.run("fanz login --token bad_token");
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/Invalid mock token/);
       expect((res.data as Record<string, unknown>)?.code).toBe("auth_error");
     });
 
-    test("missing token flag fails", () => {
-      const cli = session();
+    test("login fails when the token is missing", () => {
       const res = cli.run("fanz login");
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/Missing required flag --token/);
     });
   });
 
-  describe("whoami", () => {
-    test("returns active session after login", () => {
-      const cli = session();
-      loginAs(cli, "mock_admin");
+  describe("current login", () => {
+    test("shows the current login after signing in", () => {
+      cli.loginAs("mock_admin");
       const res = cli.run("fanz auth whoami");
       expect(res.status).toBe("ok");
       expect(res.data).toMatchObject({ token: expect.objectContaining({ token: "mock_admin" }) });
     });
 
-    test("fails when not logged in", () => {
-      const cli = session();
+    test("shows an error when no one is logged in", () => {
       const res = cli.run("fanz auth whoami");
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/Not logged in/);
@@ -60,8 +59,7 @@ describe("auth", () => {
 
   describe("permissions", () => {
     test("viewer cannot write", () => {
-      const cli = session();
-      loginAs(cli, "mock_viewer");
+      cli.loginAs("mock_viewer");
       const res = cli.run('fanz events create --name "Nope" --location "X"');
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/lacks write permission/);
@@ -69,32 +67,28 @@ describe("auth", () => {
     });
 
     test("viewer cannot delete", () => {
-      const cli = session();
-      loginAs(cli, "mock_viewer");
+      cli.loginAs("mock_viewer");
       const res = cli.run("fanz events delete EVT_100 --yes");
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/lacks delete permission/);
     });
 
     test("viewer cannot export", () => {
-      const cli = session();
-      loginAs(cli, "mock_viewer");
+      cli.loginAs("mock_viewer");
       const res = cli.run("fanz sales export --event EVT_100");
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/lacks export permission/);
     });
 
     test("viewer cannot resend", () => {
-      const cli = session();
-      loginAs(cli, "mock_viewer");
+      cli.loginAs("mock_viewer");
       const res = cli.run("fanz orders resend ORD_100");
       expect(res.status).toBe("error");
       expect(res.message).toMatch(/lacks resend permission/);
     });
 
     test("ops can read, write, export and resend but not delete", () => {
-      const cli = session();
-      loginAs(cli, "mock_ops");
+      cli.loginAs("mock_ops");
       expect(cli.run("fanz sales summary --event EVT_100").status).toBe("ok");
       expect(cli.run("fanz sales export --event EVT_100").status).toBe("ok");
       expect(cli.run("fanz orders resend ORD_100 --email a@test").status).toBe("ok");
@@ -104,8 +98,7 @@ describe("auth", () => {
     });
 
     test("admin can do everything", () => {
-      const cli = session();
-      loginAs(cli, "mock_admin");
+      cli.loginAs("mock_admin");
       expect(cli.run("fanz sales summary --event EVT_100").status).toBe("ok");
       expect(cli.run("fanz sales export --event EVT_100").status).toBe("ok");
       expect(cli.run("fanz orders resend ORD_100 --email a@test").status).toBe("ok");

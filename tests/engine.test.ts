@@ -1,34 +1,36 @@
-import { describe, expect, test } from "bun:test";
-import { session, loginAs } from "./helpers";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { session } from "./helpers";
 
-describe("engine integration", () => {
-  test("help returns command list", () => {
-    const cli = session();
+describe("CLI basics", () => {
+  let cli: ReturnType<typeof session>;
+
+  beforeEach(() => {
+    cli = session();
+  });
+
+  test("help shows available commands", () => {
     const res = cli.run("fanz help");
     expect(res.status).toBe("ok");
     expect(Array.isArray(res.data)).toBe(true);
     expect((res.data as unknown[]).length).toBeGreaterThan(0);
   });
 
-  test("unknown namespace throws", () => {
-    const cli = session();
+  test("unknown commands show an error", () => {
     const res = cli.run("fanz unknown_cmd");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Unknown command/);
     expect(res.exitCode).toBe(1);
   });
 
-  test("unknown action in namespace throws", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("unknown event actions show usage help", () => {
+    cli.loginAs("mock_admin");
     const res = cli.run("fanz events unknown_action");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Use: fanz events/);
   });
 
-  test("audit log records status and message for ok responses", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("successful commands appear in the activity history", () => {
+    cli.loginAs("mock_admin");
     cli.run("fanz events list");
     const entry = cli.state.auditLog[cli.state.auditLog.length - 1];
     expect(entry.status).toBe("ok");
@@ -36,8 +38,7 @@ describe("engine integration", () => {
     expect(entry.token).toBe("mock_admin");
   });
 
-  test("audit log records status and message for errors", () => {
-    const cli = session();
+  test("failed commands appear in the activity history", () => {
     const res = cli.run("fanz events list");
     expect(res.status).toBe("error");
     const entry = cli.state.auditLog[cli.state.auditLog.length - 1];
@@ -46,30 +47,26 @@ describe("engine integration", () => {
     expect(entry.token).toBeUndefined();
   });
 
-  test("audit log records dry-run status", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("previews appear in the activity history", () => {
+    cli.loginAs("mock_admin");
     cli.run('fanz events create --name "Audit" --location "X" --dry-run');
     const entry = cli.state.auditLog[cli.state.auditLog.length - 1];
     expect(entry.status).toBe("dry-run");
   });
 
-  test("exit code 0 for ok", () => {
-    const cli = session();
-    loginAs(cli, "mock_viewer");
+  test("successful commands finish cleanly", () => {
+    cli.loginAs("mock_viewer");
     const res = cli.run("fanz events list");
     expect(res.exitCode).toBe(0);
   });
 
-  test("exit code 1 for error", () => {
-    const cli = session();
+  test("failed commands report a failure", () => {
     const res = cli.run("fanz bad");
     expect(res.exitCode).toBe(1);
   });
 
-  test("state is deeply cloned between runs", () => {
-    const cli = session();
-    loginAs(cli, "mock_admin");
+  test("new events stay available after creation", () => {
+    cli.loginAs("mock_admin");
     cli.run('fanz events create --name "Clone" --location "X"');
     const event = cli.state.events.find((e) => e.name === "Clone")!;
     // Mutating returned data should not affect internal state

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { formatResponse, pretty, table } from "../lib/fanz-cli/format";
-import type { CliResponse } from "../lib/fanz-cli/engine";
+import { formatResponse, pretty, table } from "../lib/format";
+import type { CliResponse } from "../lib/engine";
 
-describe("format", () => {
-  describe("formatResponse", () => {
-    test("json output wraps response", () => {
+describe("displaying command results", () => {
+  describe("machine-readable output", () => {
+    test("successful results include the message and data", () => {
       const response: CliResponse = {
         status: "ok",
         message: "Done",
@@ -18,7 +18,7 @@ describe("format", () => {
       expect(parsed.data.id).toBe(1);
     });
 
-    test("json output for error includes data", () => {
+    test("failed results include helpful details", () => {
       const response: CliResponse = {
         status: "error",
         message: "Oops",
@@ -31,22 +31,22 @@ describe("format", () => {
       expect(parsed.data.code).toBe("fail");
     });
 
-    test("plain error prepends 'Error:'", () => {
+    test("errors are clearly labeled", () => {
       const response: CliResponse = { status: "error", message: "Oops", exitCode: 1 };
       expect(formatResponse(response, false)).toBe("Error: Oops");
     });
 
-    test("plain dry-run prepends 'Dry run:'", () => {
+    test("previews are clearly labeled", () => {
       const response: CliResponse = { status: "dry-run", message: "Preview", data: { a: 1 }, exitCode: 0 };
       expect(formatResponse(response, false)).toMatch(/Dry run: Preview/);
     });
 
-    test("plain ok with no data returns message", () => {
+    test("simple success messages are shown as text", () => {
       const response: CliResponse = { status: "ok", message: "Hello", exitCode: 0 };
       expect(formatResponse(response, false)).toBe("Hello");
     });
 
-    test("plain ok with data appends table", () => {
+    test("success messages with details show a table", () => {
       const response: CliResponse = { status: "ok", message: "Result", data: [{ x: 1 }], exitCode: 0 };
       const text = formatResponse(response, false);
       expect(text).toMatch(/Result/);
@@ -54,8 +54,8 @@ describe("format", () => {
     });
   });
 
-  describe("table", () => {
-    test("renders simple rows", () => {
+  describe("tables", () => {
+    test("shows rows and column names", () => {
       const out = table([
         { a: "1", b: "2" },
         { a: "3", b: "4" },
@@ -64,40 +64,40 @@ describe("format", () => {
       expect(out).toMatch(/1\s+2/);
     });
 
-    test("truncates long cells to 34 chars", () => {
+    test("shortens overly long values", () => {
       const out = table([{ col: "a".repeat(50) }]);
       expect(out).not.toMatch(/a{50}/);
     });
 
-    test("returns (empty) for empty array", () => {
+    test("says when there is nothing to show", () => {
       expect(table([])).toBe("(empty)");
     });
 
-    test("returns (empty) for non-object rows", () => {
+    test("says empty when rows cannot be displayed", () => {
       expect(table([null, undefined, "text"] as unknown as Record<string, unknown>[])).toBe("(empty)");
     });
   });
 
-  describe("pretty", () => {
-    test("formats arrays as table", () => {
+  describe("automatic display", () => {
+    test("shows lists as tables", () => {
       const out = pretty([{ a: 1 }]);
       expect(out).toMatch(/a/);
     });
 
-    test("formats objects as single-row table", () => {
+    test("shows one record as a table", () => {
       const out = pretty({ a: 1 });
       expect(out).toMatch(/a/);
     });
 
-    test("returns empty string for undefined", () => {
+    test("shows nothing for missing data", () => {
       expect(pretty(undefined)).toBe("");
     });
 
-    test("returns empty string for null", () => {
+    test("shows nothing for empty data", () => {
       expect(pretty(null)).toBe("");
     });
 
-    test("returns string for primitives", () => {
+    test("shows simple values as text", () => {
       expect(pretty(42)).toBe("42");
     });
   });

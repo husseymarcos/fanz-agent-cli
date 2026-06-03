@@ -48,7 +48,7 @@ El primer comando muestra un preview sin aplicar cambios. El segundo requiere `-
 
 ## Decisiones
 
-- El motor CLI vive en `lib/fanz-cli` y no depende de React ni de xterm.js.
+- El motor CLI vive en `lib` y no depende de React ni de xterm.js.
 - La web usa xterm.js solo como interfaz de entrada/salida.
 - El estado mock se persiste en `localStorage` para que el flujo sea repetible dentro del navegador.
 - No hay datos reales ni llamadas externas.
