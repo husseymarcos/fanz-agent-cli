@@ -44,6 +44,15 @@ describe("events", () => {
     expect(res.message).toMatch(/Name:price:stock/);
   });
 
+  test("failed create event preview leaves state unchanged", () => {
+    cli.loginAs("mock_admin");
+    const before = cli.state.events.length;
+    const res = cli.run('fanz events create --name "Bad" --location "X" --date nope --dry-run');
+    expect(res.status).toBe("error");
+    expect(cli.state.events.length).toBe(before);
+    expect(cli.state.events.some((e) => e.name === "Bad")).toBe(false);
+  });
+
   test("create event preview leaves events unchanged", () => {
     cli.loginAs("mock_admin");
     const before = cli.state.events.length;

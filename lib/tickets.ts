@@ -1,13 +1,10 @@
-import { requirePermission } from "./auth";
 import { nextId } from "./data";
-import { CliError, flagNumber, flagString, requireFlag, findById, resourceId } from "./parser";
-import type { Command } from "./parser";
-import type { FanzState } from "./data";
-import type { CliResponse } from "./engine";
+import { CliError, flagNumber, flagString, requireFlag } from "./parser";
+import type { EventStore, IdStore } from "./data";
 
 export type TicketStatus = "active" | "paused" | "sold_out";
 
-export type TicketType = {
+export type TicketData = {
   id: string;
   eventId: string;
   name: string;
@@ -17,127 +14,11 @@ export type TicketType = {
   status: TicketStatus;
 };
 
-export function tickets(state: FanzState, command: Command): CliResponse {
-  switch (command.action) {
-    case "list": {
-      requirePermission(state, "read");
-      const eventId = requireEventFlagOrSubject(command);
-      findEvent(state, eventId);
-      return {
-        status: "ok",
-        message: "Tickets",
-        data: state.tickets
-          .filter((ticket) => ticket.eventId === eventId)
-          .map(ticketView),
-        exitCode: 0,
-      };
-    }
-    case "create": {
-      requirePermission(state, "write");
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const eventId = requireFlag(command.flags, "event");
-        findEvent(state, eventId);
-        const ticket = createTicket(state, eventId, command.flags);
-        state.tickets.push(ticket);
-        const preview = ticketView(ticket);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Create ticket preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      const eventId = requireFlag(command.flags, "event");
-      findEvent(state, eventId);
-      const ticket = createTicket(state, eventId, command.flags);
-      state.tickets.push(ticket);
-      return {
-        status: "ok",
-        message: "Create ticket completed",
-        data: ticketView(ticket),
-        exitCode: 0,
-      };
-    }
-    case "update": {
-      requirePermission(state, "write");
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const ticket = findById(state.tickets, resourceId(command), "ticket");
-        applyTicketFlags(ticket, command.flags);
-        const preview = ticketView(ticket);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Update ticket preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      const ticket = findById(state.tickets, resourceId(command), "ticket");
-      applyTicketFlags(ticket, command.flags);
-      return {
-        status: "ok",
-        message: "Update ticket completed",
-        data: ticketView(ticket),
-        exitCode: 0,
-      };
-    }
-    case "delete": {
-      requirePermission(state, "delete");
-      if (!command.dryRun && !command.yes) {
-        throw new CliError(
-          "Delete ticket is destructive. Re-run with --dry-run or --yes.",
-          "confirmation_required",
-        );
-      }
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const ticket = findById(state.tickets, resourceId(command), "ticket");
-        if (ticket.sold > 0) {
-          throw new CliError(
-            `Ticket ${ticket.id} has ${ticket.sold} sold units; pause it instead.`,
-            "business_rule",
-          );
-        }
-        state.tickets = state.tickets.filter((item) => item.id !== ticket.id);
-        const preview = { deleted: ticket.id };
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Delete ticket preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      const ticket = findById(state.tickets, resourceId(command), "ticket");
-      if (ticket.sold > 0) {
-        throw new CliError(
-          `Ticket ${ticket.id} has ${ticket.sold} sold units; pause it instead.`,
-          "business_rule",
-        );
-      }
-      state.tickets = state.tickets.filter((item) => item.id !== ticket.id);
-      return {
-        status: "ok",
-        message: "Delete ticket completed",
-        data: { deleted: ticket.id },
-        exitCode: 0,
-      };
-    }
-    default:
-      throw new CliError(
-        "Use: fanz tickets list --event EVT_100 | create | update | delete",
-      );
-  }
-}
-
 export function createTicket(
-  state: FanzState,
+  store: IdStore,
   eventId: string,
   flags: Record<string, string | boolean>,
-): TicketType {
+): TicketData {
   const price = flagNumber(flags, "price");
   const stock = flagNumber(flags, "stock");
   if (price === undefined) throw new CliError("Missing required flag --price", "validation_error");
@@ -147,7 +28,7 @@ export function createTicket(
     throw new CliError("--stock must be a non-negative integer", "validation_error");
 
   return {
-    id: nextId(state, "TCK"),
+    id: nextId(store, "TCK"),
     eventId,
     name: requireFlag(flags, "name"),
     price: { amount: price, currency: "ARS" },
@@ -158,7 +39,7 @@ export function createTicket(
 }
 
 export function applyTicketFlags(
-  ticket: TicketType,
+  ticket: TicketData,
   flags: Record<string, string | boolean>,
 ) {
   ticket.name = flagString(flags, "name", ticket.name) ?? ticket.name;
@@ -176,7 +57,7 @@ export function applyTicketFlags(
   ticket.status = parseTicketStatus(flagString(flags, "status", ticket.status));
 }
 
-export function ticketView(ticket: TicketType) {
+export function ticketView(ticket: TicketData) {
   return {
     id: ticket.id,
     eventId: ticket.eventId,
@@ -189,7 +70,7 @@ export function ticketView(ticket: TicketType) {
   };
 }
 
-function remainingStock(ticket: TicketType): number {
+function remainingStock(ticket: TicketData): number {
   return Math.max(0, ticket.stock - ticket.sold);
 }
 
@@ -202,21 +83,9 @@ function parseTicketStatus(value?: string): TicketStatus {
   );
 }
 
-function requireEventFlagOrSubject(command: Command): string {
-  return (
-    flagString(command.flags, "event", command.subject) ??
-    (() => {
-      throw new CliError(
-        "Missing event id. Use --event EVT_100 or pass it after the action.",
-        "validation_error",
-      );
-    })()
-  );
-}
-
 // Avoid circular import; declare locally
-function findEvent(state: FanzState, eventId: string) {
-  const event = state.events.find((item) => item.id === eventId);
+export function findEvent(store: EventStore, eventId: string) {
+  const event = store.events.find((item) => item.id === eventId);
   if (!event) throw new CliError(`Event ${eventId} was not found.`, "not_found");
   return event;
 }

@@ -1,15 +1,10 @@
 import { parseCommand, CliError } from "./parser";
 import { nextId, createInitialState } from "./data";
-import { login, auth } from "./auth";
-import { events } from "./events";
-import { dates } from "./dates";
-import { tickets } from "./tickets";
-import { discounts } from "./discounts";
-import { sales } from "./sales";
-import { orders } from "./orders";
-import { audit, reset } from "./admin";
-import type { FanzState } from "./data";
+import { commandModules } from "./commands";
 import type { Command } from "./parser";
+import type { CommandModule } from "./commands";
+
+export type CliState = ReturnType<typeof createInitialState>;
 
 export type CliStatus = "ok" | "error" | "dry-run";
 
@@ -20,60 +15,79 @@ export type CliResponse = {
   exitCode: number;
 };
 
-export type RunResult = {
-  state: FanzState;
-  response: CliResponse;
+export type CommandContext = {
+  state: CliState;
+  command: Command;
 };
 
-export function runCli(input: string, state: FanzState = createInitialState()): RunResult {
-  const nextState = structuredClone(state);
-  let response: CliResponse;
-
-  try {
-    response = dispatch(parseCommand(input), nextState);
-  } catch (error) {
-    response = toErrorResponse(error);
-  }
-
-  nextState.auditLog.push({
-    id: nextId(nextState, "AUD"),
-    at: new Date().toISOString(),
-    token: nextState.activeToken,
-    command: input,
-    status: response.status,
-    message: response.message,
-  });
-
-  return { state: nextState, response };
+export interface CliAction {
+  run(): CliResponse;
 }
 
-function dispatch(command: Command, state: FanzState): CliResponse {
-  switch (command.namespace) {
-    case "help":
-      return { status: "ok", message: "Available commands", data: helpText(), exitCode: 0 };
-    case "login":
-      return login(state, command.flags);
-    case "auth":
-      return auth(state, command.action);
-    case "events":
-      return events(state, command);
-    case "dates":
-      return dates(state, command);
-    case "tickets":
-      return tickets(state, command);
-    case "discounts":
-      return discounts(state, command);
-    case "sales":
-      return sales(state, command);
-    case "orders":
-      return orders(state, command);
-    case "audit":
-      return audit(state, command.action);
-    case "reset":
-      return reset(state, command);
-    default:
-      throw new CliError(`Unknown command "${command.namespace}". Run: fanz help`);
+type ActionClass = new (context: CommandContext) => CliAction;
+
+export class CliSession {
+  static start(): CliSession {
+    return new CliSession(createInitialState());
   }
+
+  static withState(state: CliState): CliSession {
+    return new CliSession(state);
+  }
+
+  private state: CliState;
+
+  private constructor(state: CliState) {
+    this.state = structuredClone(state);
+  }
+
+  run(input: string): CliResponse {
+    const nextState = structuredClone(this.state);
+    const command = parseCommand(input);
+    const dispatchState = command.dryRun ? structuredClone(nextState) : nextState;
+    let response: CliResponse;
+
+    try {
+      response = dispatch(command, dispatchState);
+    } catch (error) {
+      response = toErrorResponse(error);
+    }
+
+    nextState.auditLog.push({
+      id: nextId(nextState, "AUD"),
+      at: new Date().toISOString(),
+      token: nextState.activeToken,
+      command: input,
+      status: response.status,
+      message: response.message,
+    });
+
+    this.state = nextState;
+    return response;
+  }
+
+  snapshot(): CliState {
+    return structuredClone(this.state);
+  }
+}
+
+function dispatch(command: Command, state: CliState): CliResponse {
+  const Action = actions[routeKey(command)];
+  if (!Action) throw usageFor(command);
+  return new Action({ state, command }).run();
+}
+
+function routeKey(command: Command): string {
+  if (command.namespace === "help") return "help";
+  if (command.namespace === "login") return "login";
+  if (command.namespace === "reset") return "reset";
+  return [command.namespace, command.action].filter(Boolean).join(".");
+}
+
+function usageFor(command: Command): CliError {
+  const usage = usageMessages[command.namespace];
+  if (usage) return new CliError(usage);
+  return new CliError(`Unknown command "${command.namespace}". Run: fanz help`);
 }
 
 function toErrorResponse(error: unknown): CliResponse {
@@ -92,29 +106,27 @@ function toErrorResponse(error: unknown): CliResponse {
   };
 }
 
-function helpText() {
-  return [
-    { flow: "auth", command: "fanz login --token mock_admin" },
-    { flow: "auth", command: "fanz auth whoami --json" },
-    {
-      flow: "events",
-      command:
-        'fanz events create --name "Fiesta Demo" --description "CLI smoke test" --location "C Complejo Art Media" --date 2026-07-20T23:00:00Z --ticket "General:10000:500" --status on_sale --json',
-    },
-    { flow: "events", command: "fanz events list --json" },
-    {
-      flow: "dates",
-      command: "fanz dates create --event EVT_101 --starts 2026-07-21T23:00:00Z --venue Art Media --json",
-    },
-    { flow: "tickets", command: "fanz tickets update TCK_102 --price 12000 --stock 450 --json" },
-    {
-      flow: "discounts",
-      command: "fanz discounts create --event EVT_101 --code DEMO20 --percent 20 --max-uses 100 --json",
-    },
-    { flow: "sales", command: "fanz sales summary --event EVT_100 --json" },
-    { flow: "sales", command: "fanz sales export --event EVT_100 --json" },
-    { flow: "orders", command: "fanz orders resend ORD_100 --email buyer@example.test --json" },
-    { flow: "guardrails", command: "fanz events delete EVT_101 --dry-run --json" },
-    { flow: "guardrails", command: "fanz audit list --json" },
-  ];
+const actions = Object.fromEntries(
+  commandModules.map((module) => [module.route, actionFrom(module)]),
+) as Record<string, ActionClass>;
+
+function actionFrom(module: CommandModule): ActionClass {
+  const Action = Object.values(module).find(isActionClass);
+  if (!Action) throw new Error(`Command route ${module.route} does not export a CliAction class.`);
+  return Action;
 }
+
+function isActionClass(value: unknown): value is ActionClass {
+  return typeof value === "function" && typeof value.prototype?.run === "function";
+}
+
+const usageMessages: Record<string, string> = {
+  auth: "Use: fanz auth whoami",
+  events: "Use: fanz events list|create|update|pause|resume|duplicate|delete",
+  dates: "Use: fanz dates list --event EVT_100 | create | update | delete",
+  tickets: "Use: fanz tickets list --event EVT_100 | create | update | delete",
+  discounts: "Use: fanz discounts list --event EVT_100 | create | update | delete",
+  sales: "Use: fanz sales list|summary|export --event EVT_100",
+  orders: "Use: fanz orders show ORD_100 | resend ORD_100 --email test@example.test",
+  audit: "Use: fanz audit list",
+};

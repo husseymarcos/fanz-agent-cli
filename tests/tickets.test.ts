@@ -101,6 +101,14 @@ describe("tickets", () => {
     expect(res.message).toMatch(/price must be 0 or greater/);
   });
 
+  test("failed update ticket preview leaves state unchanged", () => {
+    cli.loginAs("mock_admin");
+    const original = cli.state.tickets.find((t) => t.id === "TCK_100")!.name;
+    const res = cli.run('fanz tickets update TCK_100 --name "Mutated" --price -5 --dry-run');
+    expect(res.status).toBe("error");
+    expect(cli.state.tickets.find((t) => t.id === "TCK_100")!.name).toBe(original);
+  });
+
   test("update ticket preview leaves the ticket unchanged", () => {
     cli.loginAs("mock_admin");
     const original = cli.state.tickets.find((t) => t.id === "TCK_100")!.price.amount;

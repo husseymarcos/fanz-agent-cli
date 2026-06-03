@@ -3,9 +3,10 @@
 import { useEffect, useImperativeHandle, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { createInitialState, STORAGE_KEY } from "@/lib/data";
-import { runCli } from "@/lib/engine";
+import { CliSession } from "@/lib/engine";
 import { formatResponse } from "@/lib/format";
-import type { FanzState } from "@/lib/data";
+
+type CliState = ReturnType<typeof createInitialState>;
 
 const PROMPT = "\x1b[38;2;45;212;191mfanz\x1b[0m $ ";
 
@@ -44,7 +45,7 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
     didInitRef.current = true;
 
     const terminal = new Terminal(TERMINAL_OPTIONS);
-    let state: FanzState = loadState();
+    let cli = CliSession.withState(loadState());
     const history: string[] = [];
     let historyIndex = 0;
     let line = "";
@@ -63,9 +64,8 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
       history.push(command);
       historyIndex = history.length;
 
-      const { state: newState, response } = runCli(command, state);
-      state = newState;
-      saveState(newState);
+      const response = cli.run(command);
+      saveState(cli.snapshot());
       terminal.writeln(colorize(formatResponse(response, command.includes("--json"))));
     };
 
@@ -76,8 +76,8 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
     };
 
     const reset = () => {
-      state = createInitialState();
-      saveState(state);
+      cli = CliSession.start();
+      saveState(cli.snapshot());
       terminal.clear();
       terminal.writeln("Mock account reset.");
       writePrompt();
@@ -180,17 +180,17 @@ function colorize(text: string) {
     .replaceAll('"error"', '\x1b[31m"error"\x1b[0m');
 }
 
-function loadState(): FanzState {
+function loadState(): CliState {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (!stored) return createInitialState();
-    const parsed = JSON.parse(stored) as FanzState;
+    const parsed = JSON.parse(stored) as CliState;
     return parsed.version === 1 ? parsed : createInitialState();
   } catch {
     return createInitialState();
   }
 }
 
-function saveState(state: FanzState) {
+function saveState(state: CliState) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }

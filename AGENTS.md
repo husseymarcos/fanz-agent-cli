@@ -26,15 +26,15 @@ Use **Bun**. Lockfile is `bun.lock`.
 
 ## Architecture
 - **App Router**: entrypoints are `app/layout.tsx` and `app/page.tsx`.
-- **CLI engine**: lives in `lib/` and is framework-agnostic. Key files:
-  - `engine.ts` — `runCli(input, state)` dispatch loop
-  - `data.ts` — seed data and `createInitialState()`
-  - `types.ts` — domain types (`FanzState`, `CliResponse`, etc.)
-  - `core/` — parser, auth, responses, selectors, mutations
-  - `commands/` — per-namespace handlers (events, tickets, orders, sales, etc.)
-  - `catalog/builders.ts` — creation helpers
-  - `presentation/` — text formatting and view helpers
-- **Web UI**: `app/components/TerminalPanel.tsx` wires xterm.js to `runCli` and persists state to `localStorage` under key `fanz-cli-state-v1`.
+- **CLI engine**: lives in flat `lib/*.ts` modules and is framework-agnostic. Key files:
+  - `engine.ts` — `runCli(input, state)` clones state, dispatches parsed commands, records audit entries, and returns `{ state, response }`.
+  - `parser.ts` — command parsing and `CliError`.
+  - `data.ts` — domain types, seed data, `STORAGE_KEY`, `nextId()`, and `createInitialState()`.
+  - `auth.ts`, `events.ts`, `dates.ts`, `tickets.ts`, `discounts.ts`, `sales.ts`, `orders.ts`, `admin.ts` — per-namespace command handlers plus their local domain helpers/types.
+  - `format.ts` — CLI response formatting for terminal text and `--json` output.
+- **Web UI**: `app/page.tsx` composes the terminal screen from `app/components/QuickStartSidebar.tsx` and `app/components/TerminalPanel.tsx`.
+  - `QuickStartSidebar.tsx` renders the logo, token notes, and clickable quick-start commands.
+  - `TerminalPanel.tsx` wires xterm.js to `runCli`, manages command history, exposes `runCommand()` to the sidebar, colorizes output, supports `clear`/reset, and persists state to `localStorage` under `STORAGE_KEY`.
 - **No external APIs**: all data is mock/seeded; nothing hits the network.
 
 ## Style & toolchain

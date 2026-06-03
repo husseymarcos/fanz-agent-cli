@@ -1,21 +1,20 @@
-import { createInitialState } from "../lib/data";
-import { runCli } from "../lib/engine";
-import type { FanzState } from "../lib/data";
-import type { CliResponse } from "../lib/engine";
+import { CliSession as EngineCliSession } from "../lib/engine";
+import type { CliResponse, CliState } from "../lib/engine";
 
 export type CliSession = {
-  state: FanzState;
+  state: CliState;
   run: (command: string) => CliResponse;
   loginAs: (token: string) => void;
 };
 
 export function session(): CliSession {
+  const engine = EngineCliSession.start();
   const cli: CliSession = {
-    state: createInitialState(),
+    state: engine.snapshot(),
     run(command: string) {
-      const result = runCli(command, cli.state);
-      cli.state = result.state;
-      return result.response;
+      const response = engine.run(command);
+      cli.state = engine.snapshot();
+      return response;
     },
     loginAs(token: string) {
       const res = cli.run(`fanz login --token ${token}`);

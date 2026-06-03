@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { createInitialState } from "../lib/data";
+import { CliSession } from "../lib/engine";
 import { session } from "./helpers";
 
 describe("orders", () => {
@@ -51,15 +53,14 @@ describe("orders", () => {
   });
 
   test("resend non-paid order is blocked", () => {
-    cli.loginAs("mock_ops");
-    // Mutate an order to pending (since we can't create orders via CLI)
-    const order = cli.state.orders.find((o) => o.id === "ORD_101")!;
+    const state = createInitialState();
+    state.activeToken = "mock_ops";
+    const order = state.orders.find((o) => o.id === "ORD_101")!;
     order.status = "pending";
-    const res = cli.run("fanz orders resend ORD_101");
+    const engine = CliSession.withState(state);
+    const res = engine.run("fanz orders resend ORD_101");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Only paid orders can be resent/);
-    // restore
-    order.status = "paid";
   });
 
   test("resend preview leaves the delivery time unchanged", () => {

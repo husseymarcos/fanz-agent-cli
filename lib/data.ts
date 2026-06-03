@@ -1,12 +1,7 @@
-import type { Event, EventDate } from "./events";
-import type { TicketType } from "./tickets";
-import type { Discount } from "./discounts";
-import type { Order, IssuedTicket } from "./orders";
-
-export type Money = {
-  amount: number;
-  currency: "ARS";
-};
+import type { EventData, EventDateData } from "./events";
+import type { TicketData } from "./tickets";
+import type { DiscountData } from "./discounts";
+import type { OrderData, IssuedTicket } from "./orders";
 
 export type Account = {
   id: string;
@@ -32,33 +27,68 @@ export type AuditEntry = {
   message: string;
 };
 
-export type FanzState = {
-  version: 1;
+export type AuthStore = {
   activeToken?: string;
   accounts: Account[];
   tokens: AuthToken[];
-  events: Event[];
-  dates: EventDate[];
-  tickets: TicketType[];
-  discounts: Discount[];
-  orders: Order[];
+};
+
+export type EventStore = {
+  events: EventData[];
+};
+
+export type DateStore = {
+  dates: EventDateData[];
+};
+
+export type TicketStore = {
+  tickets: TicketData[];
+};
+
+export type DiscountStore = {
+  discounts: DiscountData[];
+};
+
+export type OrderStore = {
+  orders: OrderData[];
+};
+
+export type IssuedTicketStore = {
   issuedTickets: IssuedTicket[];
+};
+
+export type AuditStore = {
   auditLog: AuditEntry[];
+};
+
+export type IdStore = {
   counters: Record<string, number>;
 };
+
+type InitialState = {
+  version: 1;
+} & AuthStore &
+  EventStore &
+  DateStore &
+  TicketStore &
+  DiscountStore &
+  OrderStore &
+  IssuedTicketStore &
+  AuditStore &
+  IdStore;
 
 export const STORAGE_KEY = "fanz-cli-state-v1";
 
 export type IdPrefix = "EVT" | "DAT" | "TCK" | "DSC" | "ORD" | "ISS" | "AUD";
 
-export function nextId(state: FanzState, prefix: IdPrefix): string {
-  state.counters[prefix] = (state.counters[prefix] ?? 0) + 1;
-  return `${prefix}_${state.counters[prefix]}`;
+export function nextId(store: IdStore, prefix: IdPrefix): string {
+  store.counters[prefix] = (store.counters[prefix] ?? 0) + 1;
+  return `${prefix}_${store.counters[prefix]}`;
 }
 
 const now = "2026-05-29T18:00:00.000Z";
 
-export function createInitialState(): FanzState {
+export function createInitialState(): InitialState {
   return {
     version: 1,
     activeToken: undefined,

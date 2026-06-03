@@ -1,14 +1,17 @@
-import { requirePermission } from "./auth";
 import { nextId } from "./data";
 import { CliError, flagString, requireFlag } from "./parser";
-import type { Command } from "./parser";
-import type { FanzState } from "./data";
-import type { CliResponse } from "./engine";
-import type { TicketType } from "./tickets";
+import type {
+  DateStore,
+  EventStore,
+  IdStore,
+  OrderStore,
+  TicketStore,
+} from "./data";
+import type { TicketData } from "./tickets";
 
 export type EventStatus = "draft" | "on_sale" | "paused" | "ended";
 
-export type Event = {
+export type EventData = {
   id: string;
   accountId: string;
   name: string;
@@ -19,7 +22,7 @@ export type Event = {
   updatedAt: string;
 };
 
-export type EventDate = {
+export type EventDateData = {
   id: string;
   eventId: string;
   startsAt: string;
@@ -28,179 +31,90 @@ export type EventDate = {
   status: EventStatus;
 };
 
-export function events(state: FanzState, command: Command): CliResponse {
-  switch (command.action) {
-    case "list": {
-      requirePermission(state, "read");
-      return {
-        status: "ok",
-        message: "Events",
-        data: state.events.map((event) => eventView(state, event)),
-        exitCode: 0,
-      };
-    }
-    case "create": {
-      requirePermission(state, "write");
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const preview = createEventFlow(state, command);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Create event preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      return {
-        status: "ok",
-        message: "Create event completed",
-        data: createEventFlow(state, command),
-        exitCode: 0,
-      };
-    }
-    case "update": {
-      requirePermission(state, "write");
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const event = findEvent(state, command.subject);
-        applyEventFlags(event, command.flags);
-        event.updatedAt = new Date().toISOString();
-        const preview = eventView(state, event);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Update event preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      const event = findEvent(state, command.subject);
-      applyEventFlags(event, command.flags);
-      event.updatedAt = new Date().toISOString();
-      return {
-        status: "ok",
-        message: "Update event completed",
-        data: eventView(state, event),
-        exitCode: 0,
-      };
-    }
-    case "pause":
-    case "resume": {
-      requirePermission(state, "write");
-      const label = command.action === "pause" ? "Pause" : "Resume";
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const event = findEvent(state, command.subject);
-        event.status = command.action === "pause" ? "paused" : "on_sale";
-        event.updatedAt = new Date().toISOString();
-        const preview = eventView(state, event);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: `${label} event preview; no changes applied.`,
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      const event = findEvent(state, command.subject);
-      event.status = command.action === "pause" ? "paused" : "on_sale";
-      event.updatedAt = new Date().toISOString();
-      return {
-        status: "ok",
-        message: `${label} event completed`,
-        data: eventView(state, event),
-        exitCode: 0,
-      };
-    }
-    case "duplicate": {
-      requirePermission(state, "write");
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const preview = duplicateEvent(state, command);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Duplicate event preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      return {
-        status: "ok",
-        message: "Duplicate event completed",
-        data: duplicateEvent(state, command),
-        exitCode: 0,
-      };
-    }
-    case "delete": {
-      requirePermission(state, "delete");
-      if (!command.dryRun && !command.yes) {
-        throw new CliError(
-          "Delete event is destructive. Re-run with --dry-run or --yes.",
-          "confirmation_required",
-        );
-      }
-      if (command.dryRun) {
-        const snapshot = structuredClone(state);
-        const preview = deleteEvent(state, command);
-        Object.assign(state, snapshot);
-        return {
-          status: "dry-run",
-          message: "Delete event preview; no changes applied.",
-          data: preview,
-          exitCode: 0,
-        };
-      }
-      return {
-        status: "ok",
-        message: "Delete event completed",
-        data: deleteEvent(state, command),
-        exitCode: 0,
-      };
-    }
-    default:
-      throw new CliError(
-        "Use: fanz events list|create|update|pause|resume|duplicate|delete",
-      );
-  }
-}
+type EventReadStore = DateStore & EventStore & OrderStore & TicketStore;
+type EventSummaryStore = EventStore & OrderStore & TicketStore;
 
-export function findEvent(state: FanzState, eventId?: string): Event {
+export function findEvent(store: EventStore, eventId?: string): EventData {
   if (!eventId) throw new CliError("Missing event id", "validation_error");
-  const event = state.events.find((item) => item.id === eventId);
+  const event = store.events.find((item) => item.id === eventId);
   if (!event) throw new CliError(`Event ${eventId} was not found.`, "not_found");
   return event;
 }
 
-export function ensureNoPaidOrders(state: FanzState, eventId: string) {
-  const paid = state.orders.filter(
-    (order) => order.eventId === eventId && order.status === "paid",
-  );
-  if (paid.length > 0) {
-    throw new CliError(
-      `Event ${eventId} has ${paid.length} paid orders; pause it instead of deleting.`,
-      "business_rule",
-    );
-  }
+export function ensureNoPaidOrders(store: EventStore & OrderStore, eventId: string) {
+  assertEventCanDelete(store, findEvent(store, eventId));
 }
 
-export function eventView(state: FanzState, event: Event) {
+export function eventView(store: EventReadStore, event: EventData) {
   return {
     id: event.id,
     name: event.name,
     status: event.status,
     location: event.location,
-    dates: state.dates.filter((date) => date.eventId === event.id).length,
-    ticketTypes: state.tickets.filter((ticket) => ticket.eventId === event.id).length,
-    revenueARS: buildEventSummary(state, event.id).revenueARS,
+    dates: store.dates.filter((date) => date.eventId === event.id).length,
+    ticketTypes: store.tickets.filter((ticket) => ticket.eventId === event.id).length,
+    revenueARS: buildEventSummaryForRecord(store, event).revenueARS,
     updatedAt: event.updatedAt,
   };
 }
 
-export function buildEventSummary(state: FanzState, eventId: string) {
-  const tickets = state.tickets.filter((ticket) => ticket.eventId === eventId);
-  const orders = state.orders.filter((order) => order.eventId === eventId);
+export function buildEventSummary(store: EventSummaryStore, eventId: string) {
+  return buildEventSummaryForRecord(store, findEvent(store, eventId));
+}
+
+function sumOrders(orders: { status: string; total: { amount: number } }[]): number {
+  return orders
+    .filter((order) => order.status === "paid")
+    .reduce((total, order) => total + order.total.amount, 0);
+}
+
+function remainingStock(ticket: TicketData): number {
+  return Math.max(0, ticket.stock - ticket.sold);
+}
+
+export function createEvent(
+  store: IdStore,
+  accountId: string,
+  flags: Record<string, string | boolean>,
+): EventData {
+  const at = new Date().toISOString();
+  return {
+    id: nextId(store, "EVT"),
+    accountId,
+    name: requireFlag(flags, "name"),
+    description: flagString(flags, "description", "Evento mock creado desde Fanz CLI.") ?? "",
+    location: requireFlag(flags, "location"),
+    status: parseEventStatus(flagString(flags, "status", "draft")),
+    createdAt: at,
+    updatedAt: at,
+  };
+}
+
+export function applyEventFlags(
+  event: EventData,
+  flags: Record<string, string | boolean>,
+) {
+  event.name = flagString(flags, "name", event.name) ?? event.name;
+  event.description = flagString(flags, "description", event.description) ?? event.description;
+  event.location = flagString(flags, "location", event.location) ?? event.location;
+  event.status = parseEventStatus(flagString(flags, "status", event.status));
+}
+
+function assertEventCanDelete(store: OrderStore, event: EventData) {
+  const paid = store.orders.filter(
+    (order) => order.eventId === event.id && order.status === "paid",
+  );
+  if (paid.length > 0) {
+    throw new CliError(
+      `Event ${event.id} has ${paid.length} paid orders; pause it instead of deleting.`,
+      "business_rule",
+    );
+  }
+}
+
+function buildEventSummaryForRecord(store: OrderStore & TicketStore, event: EventData) {
+  const tickets = store.tickets.filter((ticket) => ticket.eventId === event.id);
+  const orders = store.orders.filter((order) => order.eventId === event.id);
   const revenue = sumOrders(orders);
   const stock = tickets.reduce(
     (acc, ticket) => ({
@@ -212,7 +126,7 @@ export function buildEventSummary(state: FanzState, eventId: string) {
   );
 
   return {
-    eventId,
+    eventId: event.id,
     orders: orders.length,
     issuedTickets: orders.reduce((total, order) => total + order.ticketIds.length, 0),
     revenueARS: revenue,
@@ -222,50 +136,13 @@ export function buildEventSummary(state: FanzState, eventId: string) {
   };
 }
 
-function sumOrders(orders: { status: string; total: { amount: number } }[]): number {
-  return orders
-    .filter((order) => order.status === "paid")
-    .reduce((total, order) => total + order.total.amount, 0);
-}
-
-function remainingStock(ticket: TicketType): number {
-  return Math.max(0, ticket.stock - ticket.sold);
-}
-
-export function createEvent(
-  state: FanzState,
-  flags: Record<string, string | boolean>,
-): Event {
-  const at = new Date().toISOString();
-  return {
-    id: nextId(state, "EVT"),
-    accountId: requirePermission(state, "write").accountId,
-    name: requireFlag(flags, "name"),
-    description: flagString(flags, "description", "Evento mock creado desde Fanz CLI.") ?? "",
-    location: requireFlag(flags, "location"),
-    status: parseEventStatus(flagString(flags, "status", "draft")),
-    createdAt: at,
-    updatedAt: at,
-  };
-}
-
-export function applyEventFlags(
-  event: Event,
-  flags: Record<string, string | boolean>,
-) {
-  event.name = flagString(flags, "name", event.name) ?? event.name;
-  event.description = flagString(flags, "description", event.description) ?? event.description;
-  event.location = flagString(flags, "location", event.location) ?? event.location;
-  event.status = parseEventStatus(flagString(flags, "status", event.status));
-}
-
 export function createDate(
-  state: FanzState,
+  store: IdStore,
   eventId: string,
   flags: Record<string, string | boolean>,
-): EventDate {
+): EventDateData {
   return {
-    id: nextId(state, "DAT"),
+    id: nextId(store, "DAT"),
     eventId,
     startsAt: toIso(requireFlag(flags, "starts")),
     doorsAt: flagString(flags, "doors") ? toIso(requireFlag(flags, "doors")) : undefined,
@@ -275,7 +152,7 @@ export function createDate(
 }
 
 export function applyDateFlags(
-  date: EventDate,
+  date: EventDateData,
   flags: Record<string, string | boolean>,
 ) {
   date.startsAt = flagString(flags, "starts") ? toIso(requireFlag(flags, "starts")) : date.startsAt;
@@ -285,10 +162,10 @@ export function applyDateFlags(
 }
 
 export function createTicketFromSpec(
-  state: FanzState,
+  store: IdStore,
   eventId: string,
   spec: string,
-): TicketType {
+): TicketData {
   const [name, rawPrice, rawStock] = spec.split(":");
   const price = Number(rawPrice);
   const stock = Number(rawStock);
@@ -298,70 +175,7 @@ export function createTicketFromSpec(
       "validation_error",
     );
   }
-  return createTicket(state, eventId, { name, price: String(price), stock: String(stock) });
-}
-
-function createEventFlow(state: FanzState, command: Command) {
-  const event = createEvent(state, command.flags);
-  const firstDate = flagString(command.flags, "date");
-  const ticket = flagString(command.flags, "ticket");
-  state.events.push(event);
-  if (firstDate) state.dates.push(createDate(state, event.id, { ...command.flags, starts: firstDate }));
-  if (ticket) state.tickets.push(createTicketFromSpec(state, event.id, ticket));
-  return eventView(state, event);
-}
-
-function duplicateEvent(state: FanzState, command: Command) {
-  const source = findEvent(state, command.subject);
-  const newId = nextId(state, "EVT");
-  const name = flagString(command.flags, "name", `${source.name} copia`) ?? `${source.name} copia`;
-  const copy: Event = {
-    ...source,
-    id: newId,
-    name,
-    status: "draft",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  state.events.push(copy);
-  state.dates
-    .filter((date) => date.eventId === source.id)
-    .forEach((date) =>
-      state.dates.push({ ...date, id: nextId(state, "DAT"), eventId: newId, status: "draft" }),
-    );
-  state.tickets
-    .filter((ticket) => ticket.eventId === source.id)
-    .forEach((ticket) =>
-      state.tickets.push({
-        ...ticket,
-        id: nextId(state, "TCK"),
-        eventId: newId,
-        sold: 0,
-        status: "active",
-      }),
-    );
-  state.discounts
-    .filter((discount) => discount.eventId === source.id)
-    .forEach((discount) =>
-      state.discounts.push({
-        ...discount,
-        id: nextId(state, "DSC"),
-        eventId: newId,
-        uses: 0,
-        status: "paused",
-      }),
-    );
-  return eventView(state, copy);
-}
-
-function deleteEvent(state: FanzState, command: Command) {
-  const event = findEvent(state, command.subject);
-  ensureNoPaidOrders(state, event.id);
-  state.events = state.events.filter((item) => item.id !== event.id);
-  state.dates = state.dates.filter((item) => item.eventId !== event.id);
-  state.tickets = state.tickets.filter((item) => item.eventId !== event.id);
-  state.discounts = state.discounts.filter((item) => item.eventId !== event.id);
-  return { deleted: event.id };
+  return createTicket(store, eventId, { name, price: String(price), stock: String(stock) });
 }
 
 function parseEventStatus(value?: string): EventStatus {
