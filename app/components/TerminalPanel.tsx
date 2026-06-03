@@ -29,23 +29,24 @@ export function TerminalPanel({ onReady }: TerminalPanelProps) {
     terminalRef.current?.write(PROMPT);
   }, []);
 
-  const execute = useCallback((command: string) => {
+  const execute = useCallback((rawCommand: string) => {
     const terminal = terminalRef.current;
-    const trimmed = command.trim();
-    if (!terminal || !trimmed) return;
+    const command = rawCommand.trim();
+    if (!terminal || !command) return;
 
-    if (trimmed === "clear") {
+    if (command === "clear") {
       terminal.clear();
       return;
     }
 
-    historyRef.current.push(trimmed);
+    historyRef.current.push(command);
     historyIndexRef.current = historyRef.current.length;
 
-    const { state, response } = runCli(trimmed, stateRef.current);
-    stateRef.current = state;
-    saveState(state);
-    terminal.writeln(colorize(formatResponse(response, trimmed.includes("--json"))));
+    const currentState = stateRef.current
+    const { state: newState, response } = runCli(command, currentState);
+    stateRef.current = newState;
+    saveState(newState);
+    terminal.writeln(colorize(formatResponse(response, command.includes("--json"))));
   }, []);
 
   const runCommand = useCallback((command: string) => {

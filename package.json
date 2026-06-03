@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsc --rootDir . --outDir .test-build --module commonjs --target ES2022 --esModuleInterop --skipLibCheck --strict --noEmit false tests/fanz-cli.test.ts lib/fanz-cli/*.ts && node --test .test-build/tests/*.js"
+    "test": "bun test"
   },
   "dependencies": {
     "@xterm/xterm": "^6.0.0",
