@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "generate:commands": "bun scripts/generate-command-registry.ts",
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run generate:commands && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "bun test"
+    "test": "bun run generate:commands && bun test"
   },
   "dependencies": {
     "@xterm/xterm": "^6.0.0",

@@ -1,8 +1,8 @@
 import { parseCommand, CliError } from "./parser";
 import { nextId, createInitialState } from "./data";
-import { commandModules } from "./commands";
+import { commandModules } from "./commands/generated";
 import type { Command } from "./parser";
-import type { CommandModule } from "./commands";
+import type { CommandModule } from "./commands/generated";
 
 export type CliState = ReturnType<typeof createInitialState>;
 
