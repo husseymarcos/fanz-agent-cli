@@ -4,8 +4,6 @@ import { flagString } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "events.create";
-
 export class CreateEvent implements CliAction {
   constructor(private context: CommandContext) {}
 

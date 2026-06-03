@@ -1,9 +1,7 @@
 import { requirePermission } from "../../auth";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "audit.list";
-
-export class AuditList implements CliAction {
+export class ListAudit implements CliAction {
   constructor(private context: CommandContext) {}
 
   run(): CliResponse {

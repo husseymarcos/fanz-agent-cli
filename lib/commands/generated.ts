@@ -1,66 +1,62 @@
-import * as AuditList from "./admin/AuditList";
-import * as ResetAccount from "./admin/ResetAccount";
-import * as Login from "./auth/Login";
-import * as Whoami from "./auth/Whoami";
-import * as CreateDate from "./dates/CreateDate";
-import * as DeleteDate from "./dates/DeleteDate";
-import * as ListDates from "./dates/ListDates";
-import * as UpdateDate from "./dates/UpdateDate";
-import * as CreateDiscount from "./discounts/CreateDiscount";
-import * as DeleteDiscount from "./discounts/DeleteDiscount";
-import * as ListDiscounts from "./discounts/ListDiscounts";
-import * as UpdateDiscount from "./discounts/UpdateDiscount";
-import * as CreateEvent from "./events/CreateEvent";
-import * as DeleteEvent from "./events/DeleteEvent";
-import * as DuplicateEvent from "./events/DuplicateEvent";
-import * as ListEvents from "./events/ListEvents";
-import * as PauseEvent from "./events/PauseEvent";
-import * as ResumeEvent from "./events/ResumeEvent";
-import * as UpdateEvent from "./events/UpdateEvent";
-import * as Help from "./help/Help";
-import * as ResendOrder from "./orders/ResendOrder";
-import * as ShowOrder from "./orders/ShowOrder";
-import * as ExportSales from "./sales/ExportSales";
-import * as ListSales from "./sales/ListSales";
-import * as SummarySales from "./sales/SummarySales";
-import * as CreateTicket from "./tickets/CreateTicket";
-import * as DeleteTicket from "./tickets/DeleteTicket";
-import * as ListTickets from "./tickets/ListTickets";
-import * as UpdateTicket from "./tickets/UpdateTicket";
+import { ListAudit } from "./audit/ListAudit";
+import { Whoami } from "./auth/Whoami";
+import { CreateDate } from "./dates/CreateDate";
+import { DeleteDate } from "./dates/DeleteDate";
+import { ListDates } from "./dates/ListDates";
+import { UpdateDate } from "./dates/UpdateDate";
+import { CreateDiscount } from "./discounts/CreateDiscount";
+import { DeleteDiscount } from "./discounts/DeleteDiscount";
+import { ListDiscounts } from "./discounts/ListDiscounts";
+import { UpdateDiscount } from "./discounts/UpdateDiscount";
+import { CreateEvent } from "./events/CreateEvent";
+import { DeleteEvent } from "./events/DeleteEvent";
+import { DuplicateEvent } from "./events/DuplicateEvent";
+import { ListEvents } from "./events/ListEvents";
+import { PauseEvent } from "./events/PauseEvent";
+import { ResumeEvent } from "./events/ResumeEvent";
+import { UpdateEvent } from "./events/UpdateEvent";
+import { Help } from "./help/Help";
+import { Login } from "./login/Login";
+import { ResendOrder } from "./orders/ResendOrder";
+import { ShowOrder } from "./orders/ShowOrder";
+import { ResetAccount } from "./reset/ResetAccount";
+import { ExportSales } from "./sales/ExportSales";
+import { ListSales } from "./sales/ListSales";
+import { SummarySales } from "./sales/SummarySales";
+import { CreateTicket } from "./tickets/CreateTicket";
+import { DeleteTicket } from "./tickets/DeleteTicket";
+import { ListTickets } from "./tickets/ListTickets";
+import { UpdateTicket } from "./tickets/UpdateTicket";
+import type { CommandRegistration } from "../engine";
 
-export type CommandModule = {
-  route: string;
-  [exportName: string]: unknown;
-};
-
-export const commandModules: CommandModule[] = [
-  AuditList,
-  ResetAccount,
-  Login,
-  Whoami,
-  CreateDate,
-  DeleteDate,
-  ListDates,
-  UpdateDate,
-  CreateDiscount,
-  DeleteDiscount,
-  ListDiscounts,
-  UpdateDiscount,
-  CreateEvent,
-  DeleteEvent,
-  DuplicateEvent,
-  ListEvents,
-  PauseEvent,
-  ResumeEvent,
-  UpdateEvent,
-  Help,
-  ResendOrder,
-  ShowOrder,
-  ExportSales,
-  ListSales,
-  SummarySales,
-  CreateTicket,
-  DeleteTicket,
-  ListTickets,
-  UpdateTicket,
-];
+export const commandActions = [
+  { route: "audit.list", Action: ListAudit },
+  { route: "auth.whoami", Action: Whoami },
+  { route: "dates.create", Action: CreateDate },
+  { route: "dates.delete", Action: DeleteDate },
+  { route: "dates.list", Action: ListDates },
+  { route: "dates.update", Action: UpdateDate },
+  { route: "discounts.create", Action: CreateDiscount },
+  { route: "discounts.delete", Action: DeleteDiscount },
+  { route: "discounts.list", Action: ListDiscounts },
+  { route: "discounts.update", Action: UpdateDiscount },
+  { route: "events.create", Action: CreateEvent },
+  { route: "events.delete", Action: DeleteEvent },
+  { route: "events.duplicate", Action: DuplicateEvent },
+  { route: "events.list", Action: ListEvents },
+  { route: "events.pause", Action: PauseEvent },
+  { route: "events.resume", Action: ResumeEvent },
+  { route: "events.update", Action: UpdateEvent },
+  { route: "help", Action: Help },
+  { route: "login", Action: Login },
+  { route: "orders.resend", Action: ResendOrder },
+  { route: "orders.show", Action: ShowOrder },
+  { route: "reset", Action: ResetAccount },
+  { route: "sales.export", Action: ExportSales },
+  { route: "sales.list", Action: ListSales },
+  { route: "sales.summary", Action: SummarySales },
+  { route: "tickets.create", Action: CreateTicket },
+  { route: "tickets.delete", Action: DeleteTicket },
+  { route: "tickets.list", Action: ListTickets },
+  { route: "tickets.update", Action: UpdateTicket },
+] satisfies CommandRegistration[];

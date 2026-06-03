@@ -4,8 +4,6 @@ import { CliError, findById, resourceId } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "discounts.delete";
-
 export class DeleteDiscount implements CliAction {
   constructor(private context: CommandContext) {}
 

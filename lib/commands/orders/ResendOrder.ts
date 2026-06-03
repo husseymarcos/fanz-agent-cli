@@ -2,8 +2,6 @@ import { requirePermission } from "../../auth";
 import { CliError, flagString, findById } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "orders.resend";
-
 export class ResendOrder implements CliAction {
   constructor(private context: CommandContext) {}
 

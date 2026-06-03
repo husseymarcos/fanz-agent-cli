@@ -4,8 +4,6 @@ import { requireFlag } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "dates.create";
-
 export class CreateDate implements CliAction {
   constructor(private context: CommandContext) {}
 

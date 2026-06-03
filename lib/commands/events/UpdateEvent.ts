@@ -3,8 +3,6 @@ import { applyEventFlags, eventView, findEvent } from "../../events";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "events.update";
-
 export class UpdateEvent implements CliAction {
   constructor(private context: CommandContext) {}
 

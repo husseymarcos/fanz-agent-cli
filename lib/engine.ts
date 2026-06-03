@@ -1,8 +1,7 @@
 import { parseCommand, CliError } from "./parser";
 import { nextId, createInitialState } from "./data";
-import { commandModules } from "./commands/generated";
+import { commandActions } from "./commands/generated";
 import type { Command } from "./parser";
-import type { CommandModule } from "./commands/generated";
 
 export type CliState = ReturnType<typeof createInitialState>;
 
@@ -24,7 +23,14 @@ export interface CliAction {
   run(): CliResponse;
 }
 
-type ActionClass = new (context: CommandContext) => CliAction;
+export type CliActionClass = {
+  new (context: CommandContext): CliAction;
+};
+
+export type CommandRegistration = {
+  route: string;
+  Action: CliActionClass;
+};
 
 export class CliSession {
   static start(): CliSession {
@@ -107,18 +113,8 @@ function toErrorResponse(error: unknown): CliResponse {
 }
 
 const actions = Object.fromEntries(
-  commandModules.map((module) => [module.route, actionFrom(module)]),
-) as Record<string, ActionClass>;
-
-function actionFrom(module: CommandModule): ActionClass {
-  const Action = Object.values(module).find(isActionClass);
-  if (!Action) throw new Error(`Command route ${module.route} does not export a CliAction class.`);
-  return Action;
-}
-
-function isActionClass(value: unknown): value is ActionClass {
-  return typeof value === "function" && typeof value.prototype?.run === "function";
-}
+  commandActions.map(({ route, Action }) => [route, Action]),
+) as Record<string, CliActionClass>;
 
 const usageMessages: Record<string, string> = {
   auth: "Use: fanz auth whoami",

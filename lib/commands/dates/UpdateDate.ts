@@ -4,8 +4,6 @@ import { findById, resourceId } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "dates.update";
-
 export class UpdateDate implements CliAction {
   constructor(private context: CommandContext) {}
 

@@ -11,19 +11,15 @@ const files = await commandFiles(commandsDir);
 const modules = await Promise.all(files.map(commandModule));
 
 const importLines = modules.map(
-  (module) => `import * as ${module.name} from "${module.importPath}";`,
+  (module) => `import { ${module.name} } from "${module.importPath}";`,
 );
 
 const output = `${importLines.join("\n")}
+import type { CommandRegistration } from "../engine";
 
-export type CommandModule = {
-  route: string;
-  [exportName: string]: unknown;
-};
-
-export const commandModules: CommandModule[] = [
-${modules.map((module) => `  ${module.name},`).join("\n")}
-];
+export const commandActions = [
+${modules.map((module) => `  { route: "${module.route}", Action: ${module.name} },`).join("\n")}
+] satisfies CommandRegistration[];
 `;
 
 await writeFile(generatedPath, output);
@@ -49,10 +45,24 @@ async function commandModule(path: string) {
     throw new Error(`${relative(commandsDir, path)} must export class ${className}.`);
   }
 
-  if (!source.includes("export const route")) {
-    throw new Error(`${relative(commandsDir, path)} must export const route.`);
+  const importPath = `./${relative(commandsDir, path).replace(/\.ts$/, "").split(sep).join("/")}`;
+  return { name: className, importPath, route: routeFor(path, className) };
+}
+
+function routeFor(path: string, className: string): string {
+  const parts = relative(commandsDir, path).replace(/\.ts$/, "").split(sep);
+  const group = parts.at(-2);
+  const action = firstWord(className);
+
+  if (!group || !action) {
+    throw new Error(`${relative(commandsDir, path)} cannot be mapped to a command route.`);
   }
 
-  const importPath = `./${relative(commandsDir, path).replace(/\.ts$/, "").split(sep).join("/")}`;
-  return { name: className, importPath };
+  if (group === action) return group;
+  return `${group}.${action}`;
+}
+
+function firstWord(value: string): string {
+  const match = value.match(/^[A-Z]?[a-z]+|^[A-Z]+(?![a-z])/);
+  return match?.[0].toLowerCase() ?? "";
 }

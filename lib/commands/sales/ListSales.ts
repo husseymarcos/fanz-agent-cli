@@ -4,8 +4,6 @@ import { orderView } from "../../orders";
 import { requireEventFlagOrSubject } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "sales.list";
-
 export class ListSales implements CliAction {
   constructor(private context: CommandContext) {}
 

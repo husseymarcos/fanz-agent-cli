@@ -3,8 +3,6 @@ import { findEvent } from "../../events";
 import { requireEventFlagOrSubject } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "dates.list";
-
 export class ListDates implements CliAction {
   constructor(private context: CommandContext) {}
 

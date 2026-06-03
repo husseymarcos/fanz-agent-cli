@@ -4,8 +4,6 @@ import { findById, resourceId } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "discounts.update";
-
 export class UpdateDiscount implements CliAction {
   constructor(private context: CommandContext) {}
 

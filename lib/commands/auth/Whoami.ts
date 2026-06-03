@@ -1,8 +1,6 @@
 import { requireSession } from "../../auth";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "auth.whoami";
-
 export class Whoami implements CliAction {
   constructor(private context: CommandContext) {}
 

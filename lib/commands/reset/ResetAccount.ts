@@ -3,8 +3,6 @@ import { createInitialState } from "../../data";
 import { CliError } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "reset";
-
 export class ResetAccount implements CliAction {
   constructor(private context: CommandContext) {}
 

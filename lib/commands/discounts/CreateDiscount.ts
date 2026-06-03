@@ -5,8 +5,6 @@ import { requireFlag } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "discounts.create";
-
 export class CreateDiscount implements CliAction {
   constructor(private context: CommandContext) {}
 

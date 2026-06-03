@@ -4,8 +4,6 @@ import { CliError } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "events.delete";
-
 export class DeleteEvent implements CliAction {
   constructor(private context: CommandContext) {}
 

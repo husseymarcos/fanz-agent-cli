@@ -6,8 +6,6 @@ import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 import type { EventData } from "../../events";
 
-export const route = "events.duplicate";
-
 export class DuplicateEvent implements CliAction {
   constructor(private context: CommandContext) {}
 

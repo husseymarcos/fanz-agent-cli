@@ -4,8 +4,6 @@ import { applyTicketFlags, ticketView } from "../../tickets";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "tickets.update";
-
 export class UpdateTicket implements CliAction {
   constructor(private context: CommandContext) {}
 

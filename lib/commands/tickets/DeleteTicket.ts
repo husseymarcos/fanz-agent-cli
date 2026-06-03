@@ -4,8 +4,6 @@ import type { TicketData } from "../../tickets";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "tickets.delete";
-
 export class DeleteTicket implements CliAction {
   constructor(private context: CommandContext) {}
 

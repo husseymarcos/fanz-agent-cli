@@ -4,8 +4,6 @@ import { findEvent } from "../../events";
 import { requireEventFlagOrSubject } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "sales.summary";
-
 export class SummarySales implements CliAction {
   constructor(private context: CommandContext) {}
 

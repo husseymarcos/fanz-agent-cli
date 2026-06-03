@@ -3,8 +3,6 @@ import { eventView, findEvent } from "../../events";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "events.pause";
-
 export class PauseEvent implements CliAction {
   constructor(private context: CommandContext) {}
 

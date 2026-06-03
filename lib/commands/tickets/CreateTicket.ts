@@ -4,8 +4,6 @@ import { createTicket, findEvent, ticketView } from "../../tickets";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "tickets.create";
-
 export class CreateTicket implements CliAction {
   constructor(private context: CommandContext) {}
 

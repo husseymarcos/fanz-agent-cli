@@ -1,7 +1,5 @@
 import type { CliAction, CliResponse } from "../../engine";
 
-export const route = "help";
-
 export class Help implements CliAction {
   run(): CliResponse {
     return { status: "ok", message: "Available commands", data: helpText(), exitCode: 0 };

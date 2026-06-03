@@ -1,8 +1,6 @@
 import { CliError, requireFlag } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "login";
-
 export class Login implements CliAction {
   constructor(private context: CommandContext) {}
 

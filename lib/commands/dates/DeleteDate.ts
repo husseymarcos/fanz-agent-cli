@@ -3,8 +3,6 @@ import { CliError, findById, resourceId } from "../../parser";
 import { commandResponse } from "../response";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "dates.delete";
-
 export class DeleteDate implements CliAction {
   constructor(private context: CommandContext) {}
 

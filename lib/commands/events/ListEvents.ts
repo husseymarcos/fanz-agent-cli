@@ -2,8 +2,6 @@ import { requirePermission } from "../../auth";
 import { eventView } from "../../events";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "events.list";
-
 export class ListEvents implements CliAction {
   constructor(private context: CommandContext) {}
 

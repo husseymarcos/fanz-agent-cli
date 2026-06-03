@@ -5,8 +5,6 @@ import { requireEventFlagOrSubject } from "../../parser";
 import { toCsv } from "../../sales";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "sales.export";
-
 export class ExportSales implements CliAction {
   constructor(private context: CommandContext) {}
 

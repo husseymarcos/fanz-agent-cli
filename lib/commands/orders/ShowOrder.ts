@@ -3,8 +3,6 @@ import { orderView } from "../../orders";
 import { findById } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
-export const route = "orders.show";
-
 export class ShowOrder implements CliAction {
   constructor(private context: CommandContext) {}
 
