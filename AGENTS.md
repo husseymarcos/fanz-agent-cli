@@ -14,23 +14,32 @@ Use **Bun**. Lockfile is `bun.lock`.
 
 ## Developer commands
 - `bun install`
+- `bun run generate:commands` — **codegen required before build/test when `lib/commands/` changes**. See Codegen below.
 - `bun run dev` — Next.js dev server on `http://localhost:3000`
-- `bun run build` — production build
+- `bun run build` — runs codegen then production build
 - `bun run lint` — ESLint (flat config in `eslint.config.mjs`)
-- `bun run test` — see Test quirks below
+- `bun run test` — runs codegen then all tests
 
 ## Testing
 - Tests use **Bun's built-in test runner** (`bun:test`) with `expect`-style assertions.
-- Run with `bun test` (or `bun run test`). No compilation step needed.
+- Run all: `bun test` or `bun run test`.
+- Run single file: `bun test tests/engine.test.ts`.
 - Test files live in `tests/` and import the CLI engine directly from `lib/`.
+- No compilation step needed; Bun runs TypeScript directly.
+
+## Codegen
+- `scripts/generate-command-registry.ts` scans `lib/commands/` and auto-generates `lib/commands/generated.ts`.
+- **Every command file** must export a class whose name matches the filename (e.g., `export class CreateEvent` in `events/CreateEvent.ts`).
+- The script maps routes from directory + class name (`events/CreateEvent.ts` → `events.create`).
+- `bun run build` and `bun run test` both run codegen first. If you add or rename a command, run `bun run generate:commands` before testing or building.
 
 ## Architecture
 - **App Router**: entrypoints are `app/layout.tsx` and `app/page.tsx`.
-- **CLI engine**: lives in flat `lib/*.ts` modules and is framework-agnostic. Key files:
-  - `engine.ts` — `runCli(input, state)` clones state, dispatches parsed commands, records audit entries, and returns `{ state, response }`.
+- **CLI engine**: framework-agnostic TypeScript in `lib/*.ts` and `lib/commands/**/*.ts`. Key files:
+  - `engine.ts` — `runCli(input, state)` clones state, dispatches parsed commands via `lib/commands/generated.ts`, records audit entries, and returns `{ state, response }`.
   - `parser.ts` — command parsing and `CliError`.
   - `data.ts` — domain types, seed data, `STORAGE_KEY`, `nextId()`, and `createInitialState()`.
-  - `auth.ts`, `events.ts`, `dates.ts`, `tickets.ts`, `discounts.ts`, `sales.ts`, `orders.ts`, `admin.ts` — per-namespace command handlers plus their local domain helpers/types.
+  - `lib/commands/<namespace>/<ActionName>.ts` — per-namespace command classes implementing `CliAction`.
   - `format.ts` — CLI response formatting for terminal text and `--json` output.
 - **Web UI**: `app/page.tsx` composes the terminal screen from `app/components/QuickStartSidebar.tsx` and `app/components/TerminalPanel.tsx`.
   - `QuickStartSidebar.tsx` renders the logo, token notes, and clickable quick-start commands.
@@ -40,7 +49,7 @@ Use **Bun**. Lockfile is `bun.lock`.
 ## Style & toolchain
 - **Tailwind CSS v4** via `@tailwindcss/postcss`. Globals import with `@import "tailwindcss";` in `app/globals.css`.
 - **ESLint 9** flat config. `eslint.config.mjs` uses `defineConfig` from `eslint/config` and extends `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript`.
-- TypeScript `strict: true`, `noEmit: true` in `tsconfig.json` (overridden during test compilation).
+- TypeScript `strict: true`, `noEmit: true` in `tsconfig.json`.
 - Path alias `@/*` maps to `./*`.
 
 ## Domain conventions
