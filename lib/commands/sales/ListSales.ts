@@ -1,6 +1,6 @@
 import { findEvent } from "../events";
 import { orderView } from "../orders";
-import { requireEventFlagOrSubject } from "../../parser";
+import { requireEventFlagOrSubject } from "../helpers";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 

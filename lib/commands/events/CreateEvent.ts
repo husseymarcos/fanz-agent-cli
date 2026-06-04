@@ -1,6 +1,7 @@
 import { requireSession } from "../permissions";
 import { createDate, createEvent, eventView } from ".";
-import { CliError, flagString } from "../../parser";
+import { CliError } from "../../parser";
+import { flagString } from "../../flags";
 import { commandResponse } from "../response";
 import { createTicket } from "../tickets";
 import { RequiresPermission } from "../permissions";

@@ -1,4 +1,6 @@
-import { CliError, flagString, findById } from "../../parser";
+import { CliError } from "../../parser";
+import { flagString } from "../../flags";
+import { findById } from "../helpers";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 

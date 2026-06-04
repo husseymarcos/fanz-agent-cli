@@ -1,5 +1,5 @@
 import { findEvent } from "../events";
-import { requireEventFlagOrSubject } from "../../parser";
+import { requireEventFlagOrSubject } from "../helpers";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 

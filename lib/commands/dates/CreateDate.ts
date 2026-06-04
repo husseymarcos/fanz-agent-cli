@@ -1,5 +1,5 @@
 import { createDate, findEvent } from "../events";
-import { requireFlag } from "../../parser";
+import { requireFlag } from "../../flags";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";

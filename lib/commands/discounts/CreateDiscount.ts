@@ -1,5 +1,6 @@
 import { nextId } from "../../data";
-import { CliError, flagNumber, flagString, requireFlag } from "../../parser";
+import { CliError } from "../../parser";
+import { flagNumber, flagString, requireFlag } from "../../flags";
 import type { DiscountStore, IdStore } from "../../data";
 import type { DiscountData } from "./index";
 import { findEvent } from "../events";

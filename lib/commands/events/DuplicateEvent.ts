@@ -1,6 +1,6 @@
 import { nextId } from "../../data";
 import { eventView, findEvent } from ".";
-import { flagString } from "../../parser";
+import { flagString } from "../../flags";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";

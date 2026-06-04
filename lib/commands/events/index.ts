@@ -1,5 +1,6 @@
 import { nextId } from "../../data";
-import { CliError, flagString, requireFlag } from "../../parser";
+import { CliError } from "../../parser";
+import { flagString, requireFlag } from "../../flags";
 import type {
   DateStore,
   EventStore,

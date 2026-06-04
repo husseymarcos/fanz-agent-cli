@@ -1,4 +1,5 @@
-import { CliError, requireFlag } from "../../parser";
+import { CliError } from "../../parser";
+import { requireFlag } from "../../flags";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
 export class Login implements CliAction {

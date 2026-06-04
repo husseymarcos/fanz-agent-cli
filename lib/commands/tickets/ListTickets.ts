@@ -1,4 +1,4 @@
-import { requireEventFlagOrSubject } from "../../parser";
+import { requireEventFlagOrSubject } from "../helpers";
 import { findEvent, ticketView } from ".";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";

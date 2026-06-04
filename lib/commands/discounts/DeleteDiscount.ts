@@ -1,5 +1,6 @@
 import type { DiscountData } from ".";
-import { CliError, findById, resourceId } from "../../parser";
+import { CliError } from "../../parser";
+import { findById } from "../helpers";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
@@ -14,7 +15,7 @@ export class DeleteDiscount implements CliAction {
         "confirmation_required",
       );
     }
-    const discount = findById(state.discounts, resourceId(command), "discount");
+    const discount = findById(state.discounts, command.subject, "discount");
     if (discount.uses > 0) {
       throw new CliError(
         `Discount ${discount.id} has ${discount.uses} uses; pause it instead.`,

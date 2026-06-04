@@ -1,4 +1,4 @@
-import { findById } from "../../parser";
+import { findById } from "../helpers";
 import { orderView } from ".";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";

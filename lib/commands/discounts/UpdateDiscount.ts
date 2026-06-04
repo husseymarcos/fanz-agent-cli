@@ -1,4 +1,6 @@
-import { CliError, flagNumber, flagString, findById, resourceId } from "../../parser";
+import { CliError } from "../../parser";
+import { flagNumber, flagString } from "../../flags";
+import { findById } from "../helpers";
 import type { DiscountData } from "./index";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
@@ -7,7 +9,7 @@ import type { CliAction, CliResponse, CommandContext } from "../../engine";
 @RequiresPermission("write")
 export class UpdateDiscount implements CliAction {
   run({ state, command }: CommandContext): CliResponse {
-    const discount = findById(state.discounts, resourceId(command), "discount");
+    const discount = findById(state.discounts, command.subject, "discount");
     applyDiscountFlags(discount, command.flags);
     return commandResponse(command, "Update discount", discount);
   }

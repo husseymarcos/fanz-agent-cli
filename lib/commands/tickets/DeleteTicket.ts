@@ -1,5 +1,6 @@
 import type { TicketData } from ".";
-import { CliError, findById, resourceId } from "../../parser";
+import { CliError } from "../../parser";
+import { findById } from "../helpers";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
@@ -14,7 +15,7 @@ export class DeleteTicket implements CliAction {
         "confirmation_required",
       );
     }
-    const ticket = findById(state.tickets, resourceId(command), "ticket");
+    const ticket = findById(state.tickets, command.subject, "ticket");
     if (ticket.sold > 0) {
       throw new CliError(
         `Ticket ${ticket.id} has ${ticket.sold} sold units; pause it instead.`,

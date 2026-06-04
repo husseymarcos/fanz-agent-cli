@@ -1,4 +1,5 @@
-import { CliError, findById, resourceId } from "../../parser";
+import { CliError } from "../../parser";
+import { findById } from "../helpers";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
@@ -13,7 +14,7 @@ export class DeleteDate implements CliAction {
         "confirmation_required",
       );
     }
-    const date = findById(state.dates, resourceId(command), "date");
+    const date = findById(state.dates, command.subject, "date");
     state.dates = state.dates.filter((item) => item.id !== date.id);
     return commandResponse(command, "Delete date", { deleted: date.id });
   }

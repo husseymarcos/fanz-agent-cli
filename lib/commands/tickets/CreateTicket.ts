@@ -1,4 +1,4 @@
-import { requireFlag } from "../../parser";
+import { requireFlag } from "../../flags";
 import { createTicket, findEvent, ticketView } from ".";
 import { commandResponse } from "../response";
 import { RequiresPermission } from "../permissions";
