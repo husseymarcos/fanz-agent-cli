@@ -120,7 +120,7 @@ export function QuickStartSidebar({ activeView, onOpenDocSection, onRunCommand }
               FANZ
             </p>
             <h1 className="mt-1 text-xl font-extrabold leading-tight text-white">
-              FANZ agent CLI
+              FANZ Agent CLI
             </h1>
           </div>
         </div>
