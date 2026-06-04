@@ -1,13 +1,13 @@
-import { nextId } from "./data";
-import { CliError, flagString, requireFlag } from "./parser";
+import { nextId } from "../../data";
+import { CliError, flagString, requireFlag } from "../../parser";
 import type {
   DateStore,
   EventStore,
   IdStore,
   OrderStore,
   TicketStore,
-} from "./data";
-import type { TicketData } from "./tickets";
+} from "../../data";
+import type { TicketData } from "../tickets";
 
 export type EventStatus = "draft" | "on_sale" | "paused" | "ended";
 
@@ -39,10 +39,6 @@ export function findEvent(store: EventStore, eventId?: string): EventData {
   const event = store.events.find((item) => item.id === eventId);
   if (!event) throw new CliError(`Event ${eventId} was not found.`, "not_found");
   return event;
-}
-
-export function ensureNoPaidOrders(store: EventStore & OrderStore, eventId: string) {
-  assertEventCanDelete(store, findEvent(store, eventId));
 }
 
 export function eventView(store: EventReadStore, event: EventData) {
@@ -100,18 +96,6 @@ export function applyEventFlags(
   event.status = parseEventStatus(flagString(flags, "status", event.status));
 }
 
-function assertEventCanDelete(store: OrderStore, event: EventData) {
-  const paid = store.orders.filter(
-    (order) => order.eventId === event.id && order.status === "paid",
-  );
-  if (paid.length > 0) {
-    throw new CliError(
-      `Event ${event.id} has ${paid.length} paid orders; pause it instead of deleting.`,
-      "business_rule",
-    );
-  }
-}
-
 function buildEventSummaryForRecord(store: OrderStore & TicketStore, event: EventData) {
   const tickets = store.tickets.filter((ticket) => ticket.eventId === event.id);
   const orders = store.orders.filter((order) => order.eventId === event.id);
@@ -161,23 +145,6 @@ export function applyDateFlags(
   date.status = parseEventStatus(flagString(flags, "status", date.status));
 }
 
-export function createTicketFromSpec(
-  store: IdStore,
-  eventId: string,
-  spec: string,
-): TicketData {
-  const [name, rawPrice, rawStock] = spec.split(":");
-  const price = Number(rawPrice);
-  const stock = Number(rawStock);
-  if (!name || !Number.isFinite(price) || !Number.isInteger(stock)) {
-    throw new CliError(
-      '--ticket must use "Name:price:stock", for example "General:10000:500"',
-      "validation_error",
-    );
-  }
-  return createTicket(store, eventId, { name, price: String(price), stock: String(stock) });
-}
-
 function parseEventStatus(value?: string): EventStatus {
   const allowed: EventStatus[] = ["draft", "on_sale", "paused", "ended"];
   if (allowed.includes(value as EventStatus)) return value as EventStatus;
@@ -197,6 +164,3 @@ function toIso(value: string): string {
   }
   return date.toISOString();
 }
-
-// Forward-declare createTicket to avoid circular import with tickets.ts
-import { createTicket } from "./tickets";

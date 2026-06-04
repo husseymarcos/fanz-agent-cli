@@ -1,11 +1,9 @@
-import { requireSession } from "../../auth";
+import { requireSession } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
 export class Whoami implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state } = this.context;
+  run({ state }: CommandContext): CliResponse {
     const token = requireSession(state);
     const account = state.accounts.find((item) => item.id === token.accountId);
     return {

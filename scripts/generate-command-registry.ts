@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const commandsDir = join(scriptDir, "..", "lib", "commands");
 const generatedPath = join(commandsDir, "generated.ts");
-const ignoredFiles = new Set(["generated.ts", "response.ts"]);
+const ignoredFiles = new Set(["generated.ts", "response.ts", "index.ts", "permissions.ts"]);
 
 const files = await commandFiles(commandsDir);
 const modules = await Promise.all(files.map(commandModule));

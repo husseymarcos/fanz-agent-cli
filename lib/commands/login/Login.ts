@@ -2,10 +2,8 @@ import { CliError, requireFlag } from "../../parser";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
 export class Login implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
+  run({ state, command }: CommandContext): CliResponse {
     const tokenValue = requireFlag(command.flags, "token");
     const token = state.tokens.find((candidate) => candidate.token === tokenValue);
     if (!token) {

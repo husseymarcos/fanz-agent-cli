@@ -1,17 +1,15 @@
 import { nextId } from "../../data";
-import { requirePermission } from "../../auth";
-import { eventView, findEvent } from "../../events";
+import { eventView, findEvent } from ".";
 import { flagString } from "../../parser";
 import { commandResponse } from "../response";
+import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
-import type { EventData } from "../../events";
+import type { EventData } from ".";
 
+@RequiresPermission("write")
 export class DuplicateEvent implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
-    requirePermission(state, "write");
+  run({ state, command }: CommandContext): CliResponse {
     const source = findEvent(state, command.subject);
     const newId = nextId(state, "EVT");
     const name = flagString(command.flags, "name", `${source.name} copia`) ?? `${source.name} copia`;

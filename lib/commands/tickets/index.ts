@@ -1,6 +1,6 @@
-import { nextId } from "./data";
-import { CliError, flagNumber, flagString, requireFlag } from "./parser";
-import type { EventStore, IdStore } from "./data";
+import { nextId } from "../../data";
+import { CliError, flagNumber, flagString, requireFlag } from "../../parser";
+import type { EventStore, IdStore } from "../../data";
 
 export type TicketStatus = "active" | "paused" | "sold_out";
 

@@ -1,15 +1,13 @@
-import { requirePermission } from "../../auth";
 import { requireFlag } from "../../parser";
-import { createTicket, findEvent, ticketView } from "../../tickets";
+import { createTicket, findEvent, ticketView } from ".";
 import { commandResponse } from "../response";
+import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
+@RequiresPermission("write")
 export class CreateTicket implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
-    requirePermission(state, "write");
+  run({ state, command }: CommandContext): CliResponse {
     const eventId = requireFlag(command.flags, "event");
     findEvent(state, eventId);
     const ticket = createTicket(state, eventId, command.flags);

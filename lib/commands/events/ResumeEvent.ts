@@ -1,14 +1,12 @@
-import { requirePermission } from "../../auth";
-import { eventView, findEvent } from "../../events";
+import { eventView, findEvent } from ".";
 import { commandResponse } from "../response";
+import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
+@RequiresPermission("write")
 export class ResumeEvent implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
-    requirePermission(state, "write");
+  run({ state, command }: CommandContext): CliResponse {
     const event = findEvent(state, command.subject);
     event.status = "on_sale";
     event.updatedAt = new Date().toISOString();

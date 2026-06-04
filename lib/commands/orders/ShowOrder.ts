@@ -1,14 +1,12 @@
-import { requirePermission } from "../../auth";
-import { orderView } from "../../orders";
 import { findById } from "../../parser";
+import { orderView } from ".";
+import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
+@RequiresPermission("read")
 export class ShowOrder implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
-    requirePermission(state, "read");
+  run({ state, command }: CommandContext): CliResponse {
     const order = findById(state.orders, command.subject, "order");
     return {
       status: "ok",

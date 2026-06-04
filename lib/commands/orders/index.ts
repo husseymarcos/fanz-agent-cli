@@ -1,4 +1,4 @@
-import type { IssuedTicketStore } from "./data";
+import type { IssuedTicketStore } from "../../data";
 
 export type OrderStatus = "paid" | "pending" | "refunded" | "cancelled";
 

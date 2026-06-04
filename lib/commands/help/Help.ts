@@ -1,7 +1,8 @@
-import type { CliAction, CliResponse } from "../../engine";
+import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
 export class Help implements CliAction {
-  run(): CliResponse {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  run(_: CommandContext): CliResponse {
     return { status: "ok", message: "Available commands", data: helpText(), exitCode: 0 };
   }
 }

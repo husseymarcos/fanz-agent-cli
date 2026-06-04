@@ -1,15 +1,13 @@
-import { requirePermission } from "../../auth";
-import type { DiscountData } from "../../discounts";
+import type { DiscountData } from ".";
 import { CliError, findById, resourceId } from "../../parser";
 import { commandResponse } from "../response";
+import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
+@RequiresPermission("delete")
 export class DeleteDiscount implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
-    requirePermission(state, "delete");
+  run({ state, command }: CommandContext): CliResponse {
     if (!command.dryRun && !command.yes) {
       throw new CliError(
         "Delete discount is destructive. Re-run with --dry-run or --yes.",

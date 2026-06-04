@@ -1,14 +1,12 @@
-import { requirePermission } from "../../auth";
 import { createInitialState } from "../../data";
 import { CliError } from "../../parser";
+import { RequiresPermission } from "../permissions";
 import type { CliAction, CliResponse, CommandContext } from "../../engine";
 
+@RequiresPermission("delete")
 export class ResetAccount implements CliAction {
-  constructor(private context: CommandContext) {}
 
-  run(): CliResponse {
-    const { state, command } = this.context;
-    requirePermission(state, "delete");
+  run({ state, command }: CommandContext): CliResponse {
     if (!command.yes) {
       throw new CliError("Reset is destructive. Re-run with --yes.", "confirmation_required");
     }

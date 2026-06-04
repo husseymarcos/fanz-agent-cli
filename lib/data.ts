@@ -1,7 +1,7 @@
-import type { EventData, EventDateData } from "./events";
-import type { TicketData } from "./tickets";
-import type { DiscountData } from "./discounts";
-import type { OrderData, IssuedTicket } from "./orders";
+import type { EventData, EventDateData } from "./commands/events/index";
+import type { TicketData } from "./commands/tickets/index";
+import type { DiscountData } from "./commands/discounts/index";
+import type { OrderData, IssuedTicket } from "./commands/orders/index";
 
 export type Account = {
   id: string;

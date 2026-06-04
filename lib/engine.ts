@@ -1,6 +1,7 @@
 import { parseCommand, CliError } from "./parser";
 import { nextId, createInitialState } from "./data";
 import { commandActions } from "./commands/generated";
+import { checkPermissions } from "./commands/permissions";
 import type { Command } from "./parser";
 
 export type CliState = ReturnType<typeof createInitialState>;
@@ -20,11 +21,11 @@ export type CommandContext = {
 };
 
 export interface CliAction {
-  run(): CliResponse;
+  run(context: CommandContext): CliResponse;
 }
 
 export type CliActionClass = {
-  new (context: CommandContext): CliAction;
+  new (): CliAction;
 };
 
 export type CommandRegistration = {
@@ -80,7 +81,8 @@ export class CliSession {
 function dispatch(command: Command, state: CliState): CliResponse {
   const Action = actions[routeKey(command)];
   if (!Action) throw usageFor(command);
-  return new Action({ state, command }).run();
+  checkPermissions(Action, state);
+  return new Action().run({ state, command });
 }
 
 function routeKey(command: Command): string {
