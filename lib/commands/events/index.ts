@@ -79,7 +79,7 @@ export function createEvent(
     id: nextId(store, "EVT"),
     accountId,
     name: requireFlag(flags, "name"),
-    description: flagString(flags, "description", "Evento mock creado desde Fanz CLI.") ?? "",
+    description: flagString(flags, "description", "Mock event created from Fanz CLI.") ?? "",
     location: requireFlag(flags, "location"),
     status: parseEventStatus(flagString(flags, "status", "draft")),
     createdAt: at,

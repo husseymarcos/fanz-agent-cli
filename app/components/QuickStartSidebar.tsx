@@ -1,54 +1,190 @@
+"use client";
+
 import Image from "next/image";
 
-const QUICK_START_COMMANDS = [
-  "fanz login --token mock_admin",
-  'fanz events create --name "Fiesta Demo" --description "Evento creado desde la prueba" --location "C Complejo Art Media" --date 2026-07-20T23:00:00Z --ticket "General:10000:500" --status on_sale --json',
-  "fanz sales summary --event EVT_100 --json",
-  "fanz orders resend ORD_100 --email comprador@example.test --json",
+const FLOW_STEPS = [
+  {
+    eyebrow: "Setup",
+    title: "Prepare mock account",
+    description: "Reset the browser state and confirm admin permissions.",
+    expected: "You should see the admin token active with full permissions.",
+    commands: [
+      "fanz login --token mock_admin",
+      "fanz reset --yes",
+      "fanz login --token mock_admin",
+      "fanz auth whoami --json",
+    ],
+  },
+  {
+    eyebrow: "Events",
+    title: "Create and publish event",
+    description: "Create event EVT_101 with one date and one initial ticket.",
+    expected: "The list should show Demo Party with status on_sale.",
+    commands: [
+      'fanz events create --name "Demo Party" --description "Event created from the test flow" --location "Art Media Complex" --date 2026-07-20T23:00:00Z --ticket "General:10000:500" --status on_sale --json',
+      "fanz events list --json",
+      'fanz dates create --event EVT_101 --starts 2026-07-21T23:00:00Z --doors 2026-07-21T22:00:00Z --venue "Art Media" --status on_sale --json',
+      "fanz dates list --event EVT_101 --json",
+    ],
+  },
+  {
+    eyebrow: "Tickets",
+    title: "Configure sales",
+    description: "Add ticket types, adjust pricing, and create a discount.",
+    expected: "The new event should have General, VIP, and the DEMO20 code.",
+    commands: [
+      "fanz tickets create --event EVT_101 --name VIP --price 25000 --stock 80 --json",
+      "fanz tickets update TCK_102 --price 12000 --stock 450 --json",
+      "fanz tickets list --event EVT_101 --json",
+      "fanz discounts create --event EVT_101 --code DEMO20 --percent 20 --max-uses 100 --json",
+      "fanz discounts list --event EVT_101 --json",
+    ],
+  },
+  {
+    eyebrow: "Ops",
+    title: "Review operations",
+    description: "Check seed sales, export CSV, and resend a mock order.",
+    expected: "Responses should use seed data from EVT_100 and ORD_100.",
+    commands: [
+      "fanz sales summary --event EVT_100 --json",
+      "fanz sales list --event EVT_100 --json",
+      "fanz sales export --event EVT_100 --json",
+      "fanz orders show ORD_100 --json",
+      "fanz orders resend ORD_100 --email buyer@example.test --json",
+    ],
+  },
+  {
+    eyebrow: "Guardrails",
+    title: "Test guardrails",
+    description: "Validate dry-run, confirmed deletion, business rules, and permissions.",
+    expected: "You should see previews, expected errors, and the full audit log.",
+    commands: [
+      'fanz events duplicate EVT_101 --name "Demo Party copy" --json',
+      "fanz events delete EVT_102 --dry-run --json",
+      "fanz events delete EVT_102 --yes --json",
+      "fanz events delete EVT_100 --yes --json",
+      "fanz login --token mock_viewer",
+      "fanz tickets create --event EVT_100 --name Floor --price 9000 --stock 100 --json",
+      "fanz login --token mock_admin",
+      "fanz audit list --json",
+    ],
+  },
+];
+
+const TOKENS = [
+  { name: "mock_admin", permissions: "read, write, delete, export, resend" },
+  { name: "mock_ops", permissions: "read, write, export, resend" },
+  { name: "mock_viewer", permissions: "read only" },
+];
+
+const DOC_NAV_ITEMS = [
+  { id: "overview", label: "Resumen" },
+  { id: "approach", label: "Enfoque" },
+  { id: "architecture", label: "Experiencia" },
+  { id: "commands", label: "Modelo de comandos" },
+  { id: "state", label: "Estado y datos" },
+  { id: "guardrails", label: "Guardrails" },
+  { id: "testing", label: "Testing" },
+  { id: "assumptions", label: "Supuestos" },
+  { id: "limitations", label: "Limitaciones" },
 ];
 
 type QuickStartSidebarProps = {
+  activeView: "terminal" | "docs";
+  onOpenDocSection: (sectionId: string) => void;
   onRunCommand: (command: string) => void;
 };
 
-export function QuickStartSidebar({ onRunCommand }: QuickStartSidebarProps) {
+export function QuickStartSidebar({ activeView, onOpenDocSection, onRunCommand }: QuickStartSidebarProps) {
   return (
-    <aside className="border-b border-(--color-border) bg-(--color-dark) px-6 py-6 lg:border-b-0 lg:border-r">
-      <div className="mb-6">
-        <Image alt="Fanz" className="mb-5" height={40} src="/fanz-logo.png" width={40} />
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-accent-light)">Fanz Agent CLI</p>
-        <h1 className="mt-2 text-2xl font-extrabold leading-tight text-white">Ticketing mock desde una web terminal</h1>
+    <aside className="border-b border-(--color-border) bg-(--color-dark) lg:h-dvh lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <div className="space-y-5 px-5 py-5">
+        <div className="flex items-start gap-3">
+          <Image alt="Fanz" className="mt-1" height={36} src="/fanz-logo.png" width={36} />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-accent-light)">
+              Fanz Agent CLI
+            </p>
+            <h1 className="mt-1 text-xl font-extrabold leading-tight text-white">
+              Mock ticketing from a web terminal
+            </h1>
+          </div>
+        </div>
+
       </div>
 
-      <div className="space-y-5 text-sm leading-6 text-(--color-light)">
-        <p>
-          Demo autocontenida para probar una cuenta mock sin instalar nada. El estado se guarda en este navegador y
-          los comandos aceptan `--json` para agentes.
-        </p>
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-white">Tokens</h2>
-          <ul className="space-y-1">
-            <li><code>mock_admin</code>: read, write, delete, export, resend</li>
-            <li><code>mock_ops</code>: read, write, export, resend</li>
-            <li><code>mock_viewer</code>: read only</li>
-          </ul>
+      {activeView === "terminal" ? (
+        <div className="space-y-4 px-5 pb-5">
+          <section className="rounded-lg border border-(--color-border) bg-(--color-dark-card) p-4">
+            <h2 className="text-sm font-semibold text-white">Mock tokens</h2>
+            <div className="mt-3 space-y-2">
+              {TOKENS.map((token) => (
+                <div className="flex items-start justify-between gap-3 text-xs" key={token.name}>
+                  <code className="text-white">{token.name}</code>
+                  <span className="text-right text-(--color-light)">{token.permissions}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {FLOW_STEPS.map((step, stepIndex) => (
+            <details
+              className="group rounded-lg border border-(--color-border) bg-(--color-dark-card) p-4 open:border-(--color-border-light)"
+              key={step.title}
+            >
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+                <span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-(--color-accent-light)">
+                    {String(stepIndex + 1).padStart(2, "0")} / {step.eyebrow}
+                  </span>
+                  <span className="mt-1 block text-sm font-bold text-white">{step.title}</span>
+                  <span className="mt-1 block text-xs leading-5 text-(--color-light)">{step.description}</span>
+                </span>
+                <span className="rounded-md border border-(--color-border) px-2 py-1 text-xs text-white group-open:bg-white/8">
+                  View
+                </span>
+              </summary>
+
+              <div className="mt-4 space-y-3">
+                <p className="rounded-md border border-(--color-border) bg-black/20 px-3 py-2 text-xs leading-5 text-(--color-light)">
+                  {step.expected}
+                </p>
+                <div className="space-y-2">
+                  {step.commands.map((command, commandIndex) => (
+                    <button
+                      className="block w-full rounded-lg border border-(--color-border) bg-black/25 px-3 py-2 text-left font-mono text-xs leading-5 text-white transition hover:border-(--color-accent) hover:bg-(--color-accent-dim)"
+                      key={`${step.title}-${commandIndex}`}
+                      onClick={() => onRunCommand(command)}
+                      title="Run command"
+                      type="button"
+                    >
+                      {command}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </details>
+          ))}
         </div>
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-white">Flujo rapido</h2>
-          <div className="space-y-2">
-            {QUICK_START_COMMANDS.map((command) => (
+      ) : (
+        <nav className="px-5 pb-5" aria-label="Documentation sections">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-(--color-accent-light)">
+            Documentation
+          </p>
+          <div className="space-y-1">
+            {DOC_NAV_ITEMS.map((item) => (
               <button
-                className="block w-full rounded-lg border border-(--color-border) bg-(--color-dark-card) px-3 py-2 text-left font-mono text-xs text-white transition hover:border-(--color-accent) hover:bg-(--color-accent-dim)"
-                key={command}
-                onClick={() => onRunCommand(command)}
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-(--color-light) transition hover:bg-(--color-dark-card) hover:text-white"
+                key={item.id}
+                onClick={() => onOpenDocSection(item.id)}
                 type="button"
               >
-                {command}
+                {item.label}
               </button>
             ))}
           </div>
-        </div>
-      </div>
+        </nav>
+      )}
     </aside>
   );
 }

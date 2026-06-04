@@ -9,8 +9,14 @@ import { formatResponse } from "@/lib/format";
 type CliState = ReturnType<typeof createInitialState>;
 
 const PROMPT = "\x1b[38;2;45;212;191mfanz\x1b[0m $ ";
+const TERMINAL_FONT_SIZE = 13;
+const TERMINAL_LINE_HEIGHT = 1.35;
+const TERMINAL_CELL_WIDTH = 8;
+const TERMINAL_SCROLLBAR_WIDTH = 16;
+const TERMINAL_ROW_SAFETY_MARGIN = 2;
 
 export type TerminalPanelRef = {
+  reset: () => void;
   runCommand: (command: string) => void;
 };
 
@@ -18,8 +24,12 @@ const TERMINAL_OPTIONS = {
   cursorBlink: true,
   convertEol: true,
   fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
-  fontSize: 13,
-  lineHeight: 1.35,
+  fontSize: TERMINAL_FONT_SIZE,
+  lineHeight: TERMINAL_LINE_HEIGHT,
+  scrollback: 5000,
+  scrollOnEraseInDisplay: true,
+  scrollOnUserInput: true,
+  scrollSensitivity: 1.6,
   theme: {
     background: "#111827",
     foreground: "#f1f5f9",
@@ -36,6 +46,7 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
   const didInitRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
+    reset: () => resetRef.current(),
     runCommand: (command: string) => runCommandRef.current(command),
   }), []);
 
@@ -50,27 +61,39 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
     let historyIndex = 0;
     let line = "";
 
-    const writePrompt = () => terminal.write(PROMPT);
+    const keepTerminalReady = () => {
+      window.requestAnimationFrame(() => {
+        terminal.scrollToBottom();
+        terminal.focus();
+        window.requestAnimationFrame(() => terminal.scrollToBottom());
+      });
+    };
+    const writePrompt = () => terminal.write(PROMPT, keepTerminalReady);
+    const resetTerminalView = () => {
+      terminal.write("\x1b[H\x1b[2J");
+    };
 
     const execute = (rawCommand: string) => {
       const command = rawCommand.trim();
       if (!command) return;
 
       if (command === "clear") {
-        terminal.clear();
+        resetTerminalView();
         return;
       }
 
+      resetTerminalView();
+      terminal.write(PROMPT);
+      terminal.writeln(command);
       history.push(command);
       historyIndex = history.length;
 
       const response = cli.run(command);
       saveState(cli.snapshot());
-      terminal.writeln(colorize(formatResponse(response, command.includes("--json"))));
+      terminal.writeln(colorize(formatResponse(response, command.includes("--json"))), keepTerminalReady);
     };
 
     const runCommand = (command: string) => {
-      terminal.writeln(command);
       execute(command);
       writePrompt();
     };
@@ -79,7 +102,7 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
       cli = CliSession.start();
       saveState(cli.snapshot());
       terminal.clear();
-      terminal.writeln("Mock account reset.");
+      terminal.writeln("Mock account reset.", keepTerminalReady);
       writePrompt();
     };
 
@@ -98,7 +121,6 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
 
     const handleInput = (char: string) => {
       if (char === "\r") {
-        terminal.writeln("");
         execute(line);
         line = "";
         writePrompt();
@@ -127,6 +149,9 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
     terminal.writeln("Run \x1b[36mfanz help\x1b[0m for copyable end-to-end commands.");
     terminal.writeln("");
     terminal.write(PROMPT);
+    keepTerminalReady();
+
+    host.addEventListener("pointerdown", () => terminal.focus());
 
     terminal.onData((data) => {
       if (data === "\u001b[A") return recallHistory(-1);
@@ -135,40 +160,34 @@ export function TerminalPanel({ ref }: { ref: React.Ref<TerminalPanelRef> }) {
     });
 
     const resize = () => {
-      const cols = Math.max(64, Math.floor(host.clientWidth / 8));
-      const rows = Math.max(18, Math.floor(host.clientHeight / 18));
+      if (host.clientWidth === 0 || host.clientHeight === 0) return;
+      const width = host.getBoundingClientRect().width;
+      const height = host.getBoundingClientRect().height;
+      const lineHeight = TERMINAL_FONT_SIZE * TERMINAL_LINE_HEIGHT;
+      const cols = Math.max(40, Math.floor((width - TERMINAL_SCROLLBAR_WIDTH) / TERMINAL_CELL_WIDTH));
+      const rows = Math.max(8, Math.floor(height / lineHeight) - TERMINAL_ROW_SAFETY_MARGIN);
       terminal.resize(cols, rows);
+      keepTerminalReady();
     };
 
     resize();
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(host);
     window.addEventListener("resize", resize);
 
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener("resize", resize);
       terminal.dispose();
     };
   }, []);
 
   return (
-    <main className="flex min-h-[68dvh] flex-col bg-black p-4 sm:p-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-white">Terminal</p>
-          <p className="text-xs text-(--color-light)">Escribi comandos o pegá ejemplos del panel.</p>
-        </div>
-        <button
-          className="rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-sm font-semibold text-white transition hover:border-white/15 hover:bg-white/10"
-          onClick={() => resetRef.current()}
-          type="button"
-        >
-          Reset mock
-        </button>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-135 flex-1 overflow-hidden rounded-lg border border-(--color-border) bg-(--color-dark-card) p-3 shadow-(--shadow-hero) lg:min-h-0">
+        <div className="h-full min-h-0 overflow-hidden rounded-md" ref={hostRef} />
       </div>
-      <div
-        className="min-h-135 flex-1 overflow-hidden rounded-2xl border border-(--color-border) bg-(--color-dark-card) p-3 shadow-(--shadow-hero)"
-        ref={hostRef}
-      />
-    </main>
+    </div>
   );
 }
 

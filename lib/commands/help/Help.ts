@@ -14,7 +14,7 @@ function helpText() {
     {
       flow: "events",
       command:
-        'fanz events create --name "Fiesta Demo" --description "CLI smoke test" --location "C Complejo Art Media" --date 2026-07-20T23:00:00Z --ticket "General:10000:500" --status on_sale --json',
+        'fanz events create --name "Demo Party" --description "CLI smoke test" --location "Art Media Complex" --date 2026-07-20T23:00:00Z --ticket "General:10000:500" --status on_sale --json',
     },
     { flow: "events", command: "fanz events list --json" },
     {

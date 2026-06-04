@@ -104,13 +104,13 @@ export function createInitialState(): InitialState {
       },
       {
         token: "mock_ops",
-        label: "Operaciones mock",
+        label: "Mock operations",
         accountId: "ACC_DEMO",
         permissions: ["read", "write", "export", "resend"],
       },
       {
         token: "mock_viewer",
-        label: "Solo lectura mock",
+        label: "Read-only mock",
         accountId: "ACC_DEMO",
         permissions: ["read"],
       },
@@ -119,8 +119,8 @@ export function createInitialState(): InitialState {
       {
         id: "EVT_100",
         accountId: "ACC_DEMO",
-        name: "Noche Demo",
-        description: "Evento mock inicial para probar ventas y tickets.",
+        name: "Demo Night",
+        description: "Initial mock event for testing sales and tickets.",
         location: "Club Fanz, Buenos Aires",
         status: "on_sale",
         createdAt: now,

@@ -87,7 +87,7 @@ describe("CLI basics", () => {
     const engine = CliSession.start();
     const snapshot = engine.snapshot();
     snapshot.events[0].name = "Outside";
-    expect(engine.snapshot().events[0].name).toBe("Noche Demo");
+    expect(engine.snapshot().events[0].name).toBe("Demo Night");
   });
 
   test("CliSession dry-run leaves state unchanged", () => {

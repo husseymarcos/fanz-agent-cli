@@ -12,7 +12,7 @@ export class DuplicateEvent implements CliAction {
   run({ state, command }: CommandContext): CliResponse {
     const source = findEvent(state, command.subject);
     const newId = nextId(state, "EVT");
-    const name = flagString(command.flags, "name", `${source.name} copia`) ?? `${source.name} copia`;
+    const name = flagString(command.flags, "name", `${source.name} copy`) ?? `${source.name} copy`;
     const copy: EventData = {
       ...source,
       id: newId,

@@ -97,7 +97,7 @@ describe("events", () => {
     cli.loginAs("mock_admin");
     const res = cli.run("fanz events duplicate EVT_100");
     expect(res.status).toBe("ok");
-    const copy = cli.state.events.find((e) => e.name === "Noche Demo copia");
+    const copy = cli.state.events.find((e) => e.name === "Demo Night copy");
     expect(copy).toBeTruthy();
     expect(copy?.status).toBe("draft");
     expect(cli.state.dates.filter((d) => d.eventId === copy!.id).length).toBe(2);

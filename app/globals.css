@@ -37,6 +37,16 @@ button {
 
 .xterm {
   height: 100%;
+  min-height: 0;
+}
+
+.xterm .xterm-viewport {
+  overflow-y: auto !important;
+  scrollbar-gutter: stable;
+}
+
+.xterm .xterm-screen {
+  min-height: 100%;
 }
 
 .xterm-screen,
