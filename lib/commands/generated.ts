@@ -1,5 +1,7 @@
 import { ListAudit } from "./audit/ListAudit";
 import { Whoami } from "./auth/Whoami";
+import { DescribeCommand } from "./commands/DescribeCommand";
+import { ListCommands } from "./commands/ListCommands";
 import { CreateDate } from "./dates/CreateDate";
 import { DeleteDate } from "./dates/DeleteDate";
 import { ListDates } from "./dates/ListDates";
@@ -17,6 +19,7 @@ import { ResumeEvent } from "./events/ResumeEvent";
 import { UpdateEvent } from "./events/UpdateEvent";
 import { Help } from "./help/Help";
 import { Login } from "./login/Login";
+import { CreateOrder } from "./orders/CreateOrder";
 import { ResendOrder } from "./orders/ResendOrder";
 import { ShowOrder } from "./orders/ShowOrder";
 import { ResetAccount } from "./reset/ResetAccount";
@@ -32,6 +35,8 @@ import type { CommandRegistration } from "../engine";
 export const commandActions = [
   { route: "audit.list", Action: ListAudit },
   { route: "auth.whoami", Action: Whoami },
+  { route: "commands.describe", Action: DescribeCommand },
+  { route: "commands.list", Action: ListCommands },
   { route: "dates.create", Action: CreateDate },
   { route: "dates.delete", Action: DeleteDate },
   { route: "dates.list", Action: ListDates },
@@ -49,6 +54,7 @@ export const commandActions = [
   { route: "events.update", Action: UpdateEvent },
   { route: "help", Action: Help },
   { route: "login", Action: Login },
+  { route: "orders.create", Action: CreateOrder },
   { route: "orders.resend", Action: ResendOrder },
   { route: "orders.show", Action: ShowOrder },
   { route: "reset", Action: ResetAccount },

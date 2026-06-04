@@ -12,6 +12,13 @@ export type CliResponse = {
   status: CliStatus;
   message: string;
   data?: unknown;
+  command?: {
+    input: string;
+    route: string;
+  };
+  code?: string;
+  hint?: string;
+  warnings?: string[];
   exitCode: number;
 };
 
@@ -50,14 +57,22 @@ export class CliSession {
 
   run(input: string): CliResponse {
     const nextState = structuredClone(this.state);
-    const command = parseCommand(input);
-    const dispatchState = command.dryRun ? structuredClone(nextState) : nextState;
+    let command: Command | undefined;
     let response: CliResponse;
 
     try {
+      command = parseCommand(input);
+      const dispatchState = command.dryRun ? structuredClone(nextState) : nextState;
       response = dispatch(command, dispatchState);
     } catch (error) {
       response = toErrorResponse(error);
+    }
+
+    if (command) {
+      response.command = {
+        input,
+        route: routeKey(command),
+      };
     }
 
     nextState.auditLog.push({
@@ -103,6 +118,8 @@ function toErrorResponse(error: unknown): CliResponse {
     return {
       status: "error",
       message: error.message,
+      code: error.code,
+      hint: hintFor(error.code),
       data: { code: error.code, details: error.details ?? null },
       exitCode: 1,
     };
@@ -120,11 +137,26 @@ const actions = Object.fromEntries(
 
 const usageMessages: Record<string, string> = {
   auth: "Use: fanz auth whoami",
+  commands: "Use: fanz commands list | describe tickets.create",
   events: "Use: fanz events list|create|update|pause|resume|duplicate|delete",
   dates: "Use: fanz dates list --event EVT_100 | create | update | delete",
   tickets: "Use: fanz tickets list --event EVT_100 | create | update | delete",
   discounts: "Use: fanz discounts list --event EVT_100 | create | update | delete",
   sales: "Use: fanz sales list|summary|export --event EVT_100",
-  orders: "Use: fanz orders show ORD_100 | resend ORD_100 --email test@example.test",
+  orders: "Use: fanz orders create --event EVT_101 --ticket TCK_102 --buyer-email test@example.test | show ORD_100 | resend ORD_100",
   audit: "Use: fanz audit list",
 };
+
+function hintFor(code: string): string | undefined {
+  const hints: Record<string, string> = {
+    auth_required: "Run fanz login --token mock_admin, mock_ops or mock_viewer.",
+    auth_error: "Use one of the documented mock tokens.",
+    forbidden: "Switch to a token with the required permission.",
+    not_found: "List the resource first and retry with a returned id.",
+    parse_error: "Check quotes and flag syntax, then retry.",
+    validation_error: "Run fanz commands describe <route> --json to inspect required flags.",
+    business_rule: "Use --dry-run to preview risky operations and adjust the command.",
+    invalid_command: "Run fanz commands list --json to discover available commands.",
+  };
+  return hints[code];
+}

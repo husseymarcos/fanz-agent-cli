@@ -13,22 +13,39 @@ describe("displaying command results", () => {
       };
       const text = formatResponse(response, true);
       const parsed = JSON.parse(text);
+      expect(parsed.schemaVersion).toBe(1);
       expect(parsed.ok).toBe(true);
       expect(parsed.status).toBe("ok");
       expect(parsed.data.id).toBe(1);
+      expect(Array.isArray(parsed.warnings)).toBe(true);
     });
 
     test("failed results include helpful details", () => {
       const response: CliResponse = {
         status: "error",
         message: "Oops",
+        code: "fail",
+        hint: "Retry differently",
         data: { code: "fail" },
         exitCode: 1,
       };
       const text = formatResponse(response, true);
       const parsed = JSON.parse(text);
       expect(parsed.ok).toBe(false);
+      expect(parsed.code).toBe("fail");
+      expect(parsed.hint).toBe("Retry differently");
       expect(parsed.data.code).toBe("fail");
+    });
+
+    test("machine-readable output exposes resource ids when possible", () => {
+      const response: CliResponse = {
+        status: "ok",
+        message: "Created",
+        data: { id: "ORD_102" },
+        exitCode: 0,
+      };
+      const parsed = JSON.parse(formatResponse(response, true));
+      expect(parsed.resource).toEqual({ type: "order", id: "ORD_102" });
     });
 
     test("errors are clearly labeled", () => {

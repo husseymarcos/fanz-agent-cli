@@ -28,6 +28,8 @@ fanz dates create --event EVT_101 --starts 2026-07-21T23:00:00Z --venue "Art Med
 fanz tickets create --event EVT_101 --name VIP --price 25000 --stock 80 --json
 fanz tickets update TCK_102 --price 12000 --stock 450 --json
 fanz discounts create --event EVT_101 --code DEMO20 --percent 20 --max-uses 100 --json
+fanz orders create --event EVT_101 --ticket TCK_102 --buyer-email buyer@example.test --quantity 2 --json
+fanz sales summary --event EVT_101 --json
 fanz sales summary --event EVT_100 --json
 fanz sales list --event EVT_100 --json
 fanz orders show ORD_100 --json
@@ -45,6 +47,15 @@ fanz tickets create --event EVT_100 --name Campo --price 9000 --stock 100 --json
 ```
 
 El primer comando muestra un preview sin aplicar cambios. El segundo requiere `--yes` porque borra datos. El ultimo falla porque `mock_viewer` no tiene permiso de escritura.
+
+## Agent contract
+
+- Usar `--json` para respuestas parseables y sin tablas.
+- Las respuestas JSON incluyen `schemaVersion`, `command`, `code`, `hint`, `resource`, `warnings`, `data` y `exitCode`.
+- Descubrir comandos con `fanz commands list --json`.
+- Inspeccionar un contrato con `fanz commands describe orders.create --json`.
+- Las acciones de escritura relevantes soportan `--dry-run`; las destructivas requieren `--yes`.
+- `fanz orders create` genera una orden mock pagada, emite tickets y actualiza ventas/stock para probar un evento creado desde cero.
 
 ## Decisiones
 

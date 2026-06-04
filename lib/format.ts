@@ -4,10 +4,16 @@ export function formatResponse(response: CliResponse, json: boolean): string {
   if (json) {
     return JSON.stringify(
       {
+        schemaVersion: 1,
         ok: response.status !== "error",
         status: response.status,
+        command: response.command ?? null,
+        code: response.code ?? null,
+        hint: response.hint ?? null,
+        resource: responseResource(response.data),
         message: response.message,
         data: response.data ?? null,
+        warnings: response.warnings ?? [],
         exitCode: response.exitCode,
       },
       null,
@@ -64,4 +70,29 @@ function stringifyCell(value: unknown): string {
   if (value === null) return "null";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
+}
+
+function responseResource(data: unknown) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  const id = typeof record.id === "string" ? record.id : undefined;
+  if (!id) return null;
+  return {
+    type: resourceTypeForId(id),
+    id,
+  };
+}
+
+function resourceTypeForId(id: string): string {
+  const prefix = id.split("_")[0];
+  const types: Record<string, string> = {
+    AUD: "audit_entry",
+    DAT: "date",
+    DSC: "discount",
+    EVT: "event",
+    ISS: "issued_ticket",
+    ORD: "order",
+    TCK: "ticket",
+  };
+  return types[prefix] ?? "resource";
 }

@@ -28,7 +28,13 @@ function helpText() {
     },
     { flow: "sales", command: "fanz sales summary --event EVT_100 --json" },
     { flow: "sales", command: "fanz sales export --event EVT_100 --json" },
+    {
+      flow: "orders",
+      command: "fanz orders create --event EVT_101 --ticket TCK_102 --buyer-email buyer@example.test --quantity 2 --json",
+    },
     { flow: "orders", command: "fanz orders resend ORD_100 --email buyer@example.test --json" },
+    { flow: "agents", command: "fanz commands list --json" },
+    { flow: "agents", command: "fanz commands describe orders.create --json" },
     { flow: "guardrails", command: "fanz events delete EVT_101 --dry-run --json" },
     { flow: "guardrails", command: "fanz audit list --json" },
   ];

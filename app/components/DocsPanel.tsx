@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 const CLI_COMMANDS = [
   "fanz login --token mock_admin",
   "fanz auth whoami --json",
+  "fanz commands list --json",
+  "fanz commands describe orders.create --json",
   "fanz events list --json",
   "fanz tickets list --event EVT_100 --json",
+  "fanz orders create --event EVT_101 --ticket TCK_102 --buyer-email buyer@example.test --quantity 2 --json",
   "fanz sales summary --event EVT_100 --json",
   "fanz audit list --json",
 ];
@@ -74,8 +77,8 @@ export function DocsPanel() {
           </p>
           <p>
             La demo cubre autenticacion, creacion de eventos, fechas, tipos de ticket, descuentos, resumenes de venta,
-            reenvio de ordenes, guardrails destructivos e historial de auditoria. La mayoria de los comandos soportan
-            <code>--json</code> para que el mismo flujo lo pueda evaluar una persona o un agente.
+            creacion y reenvio de ordenes mock, guardrails destructivos e historial de auditoria. La mayoria de los
+            comandos soportan <code>--json</code> para que el mismo flujo lo pueda evaluar una persona o un agente.
           </p>
         </DocSection>
 
@@ -116,6 +119,19 @@ export function DocsPanel() {
               ))}
             </div>
           </div>
+        </DocSection>
+
+        <DocSection id="agent-contract" title="Contrato para agentes">
+          <p>
+            Los agentes pueden descubrir capacidades sin login usando <code>fanz commands list --json</code> y
+            <code>fanz commands describe &lt;route&gt; --json</code>. Cada contrato declara permisos, flags requeridos,
+            si muta estado, si soporta dry-run y un ejemplo copiable.
+          </p>
+          <p>
+            Las respuestas JSON incluyen <code>schemaVersion</code>, <code>command</code>, <code>code</code>,
+            <code>hint</code>, <code>resource</code>, <code>warnings</code> y <code>exitCode</code>. Esto evita que un
+            agente tenga que interpretar tablas o texto decorativo para tomar la siguiente accion.
+          </p>
         </DocSection>
 
         <DocSection id="state" title="Estado y datos">

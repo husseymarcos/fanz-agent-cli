@@ -16,6 +16,22 @@ describe("CLI basics", () => {
     expect((res.data as unknown[]).length).toBeGreaterThan(0);
   });
 
+  test("commands list exposes agent metadata without login", () => {
+    const res = cli.run("fanz commands list");
+    expect(res.status).toBe("ok");
+    const commands = res.data as Record<string, unknown>[];
+    expect(commands.some((command) => command.route === "orders.create")).toBe(true);
+  });
+
+  test("commands describe shows required flags and example", () => {
+    const res = cli.run("fanz commands describe orders.create");
+    expect(res.status).toBe("ok");
+    const data = res.data as Record<string, unknown>;
+    expect(data.route).toBe("orders.create");
+    expect(data.requiredFlags).toEqual(["event", "ticket", "buyer-email"]);
+    expect(data.example).toMatch(/orders create/);
+  });
+
   test("unknown commands show an error", () => {
     const res = cli.run("fanz unknown_cmd");
     expect(res.status).toBe("error");
@@ -28,6 +44,13 @@ describe("CLI basics", () => {
     const res = cli.run("fanz events unknown_action");
     expect(res.status).toBe("error");
     expect(res.message).toMatch(/Use: fanz events/);
+  });
+
+  test("JSON responses include the command route", () => {
+    cli.loginAs("mock_viewer");
+    const res = cli.run("fanz events list");
+    const command = res.command as Record<string, unknown>;
+    expect(command.route).toBe("events.list");
   });
 
   test("successful commands appear in the activity history", () => {
