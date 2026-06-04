@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fanz Agent CLI",
+  title: "FANZ agent CLI",
   description: "Mock ticketing CLI for agents and humans.",
   icons: {
     icon: [

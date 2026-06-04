@@ -14,10 +14,15 @@ describe("displaying command results", () => {
       const text = formatResponse(response, true);
       const parsed = JSON.parse(text);
       expect(parsed.schemaVersion).toBe(1);
-      expect(parsed.ok).toBe(true);
       expect(parsed.status).toBe("ok");
+      expect(parsed).not.toHaveProperty("ok");
+      expect(parsed).not.toHaveProperty("code");
+      expect(parsed).not.toHaveProperty("hint");
+      expect(parsed).not.toHaveProperty("command");
+      expect(parsed).not.toHaveProperty("resource");
       expect(parsed.data.id).toBe(1);
       expect(Array.isArray(parsed.warnings)).toBe(true);
+      expect(parsed.exitCode).toBe(0);
     });
 
     test("failed results include helpful details", () => {
@@ -31,7 +36,8 @@ describe("displaying command results", () => {
       };
       const text = formatResponse(response, true);
       const parsed = JSON.parse(text);
-      expect(parsed.ok).toBe(false);
+      expect(parsed.status).toBe("error");
+      expect(parsed).not.toHaveProperty("ok");
       expect(parsed.code).toBe("fail");
       expect(parsed.hint).toBe("Retry differently");
       expect(parsed.data.code).toBe("fail");
@@ -46,6 +52,17 @@ describe("displaying command results", () => {
       };
       const parsed = JSON.parse(formatResponse(response, true));
       expect(parsed.resource).toEqual({ type: "order", id: "ORD_102" });
+    });
+
+    test("machine-readable output exposes command metadata when present", () => {
+      const response: CliResponse = {
+        status: "ok",
+        message: "Listed",
+        command: { input: "fanz events list", route: "events.list" },
+        exitCode: 0,
+      };
+      const parsed = JSON.parse(formatResponse(response, true));
+      expect(parsed.command).toEqual({ input: "fanz events list", route: "events.list" });
     });
 
     test("errors are clearly labeled", () => {

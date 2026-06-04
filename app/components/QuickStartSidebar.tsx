@@ -117,10 +117,10 @@ export function QuickStartSidebar({ activeView, onOpenDocSection, onRunCommand }
           <Image alt="Fanz" className="mt-1" height={36} src="/fanz-logo.png" width={36} />
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-(--color-accent-light)">
-              Fanz Agent CLI
+              FANZ
             </p>
             <h1 className="mt-1 text-xl font-extrabold leading-tight text-white">
-              Mock ticketing from a web terminal
+              FANZ agent CLI
             </h1>
           </div>
         </div>

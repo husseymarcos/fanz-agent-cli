@@ -2,23 +2,20 @@ import type { CliResponse } from "./engine";
 
 export function formatResponse(response: CliResponse, json: boolean): string {
   if (json) {
-    return JSON.stringify(
-      {
-        schemaVersion: 1,
-        ok: response.status !== "error",
-        status: response.status,
-        command: response.command ?? null,
-        code: response.code ?? null,
-        hint: response.hint ?? null,
-        resource: responseResource(response.data),
-        message: response.message,
-        data: response.data ?? null,
-        warnings: response.warnings ?? [],
-        exitCode: response.exitCode,
-      },
-      null,
-      2,
-    );
+    const payload: Record<string, unknown> = {
+      schemaVersion: 1,
+      status: response.status,
+      message: response.message,
+      data: response.data ?? null,
+      warnings: response.warnings ?? [],
+      exitCode: response.exitCode,
+    };
+    const resource = responseResource(response.data);
+    if (response.command) payload.command = response.command;
+    if (resource) payload.resource = resource;
+    if (response.code) payload.code = response.code;
+    if (response.hint) payload.hint = response.hint;
+    return JSON.stringify(payload, null, 2);
   }
 
   if (response.status === "error") return `Error: ${response.message}`;
